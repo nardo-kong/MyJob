@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <html lang="zh-CN">
-<head><meta content="default-src 'none'; style-src * 'unsafe-inline'; script-src * 'unsafe-inline'; img-src * data: blob:; font-src * data:; media-src * data: blob:; connect-src 'none'; form-action 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'" http-equiv="Content-Security-Policy"/>
+<head><meta content="default-src 'none'; style-src * 'unsafe-inline'; script-src * 'unsafe-inline'; img-src * data: blob:; font-src * data:; media-src * data: blob:; connect-src *; form-action 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'" http-equiv="Content-Security-Policy"/>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>求职信息聚合平台</title>
@@ -869,6 +869,7 @@
                 };
 
                 try {
+                    console.log(`Sending API test request to: http://localhost:5000/api/ai`);
                     const response = await fetch('http://localhost:5000/api/ai', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1180,21 +1181,27 @@
         const AI = {
             async call(prompt) {
                 const { apiKey, endpoint, model } = App.data.settings;
+                console.log(`Sending direct AI call to: http://localhost:5000/api/ai`);
                 try {
-                    const response = await fetch(endpoint, {
+                    const response = await fetch('http://localhost:5000/api/ai', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            model: model,
+                            apiKey,
+                            endpoint,
+                            model,
                             messages: [{ role: "user", content: prompt }],
-                            temperature: 0.7
+                            temperature: 0.7,
+                            isTest: false
                         })
                     });
                     
-                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.details || `API Error: ${response.status}`);
+                    }
                     const data = await response.json();
                     return data.choices[0].message.content;
                 } catch (error) {
@@ -1231,6 +1238,7 @@
                 };
 
                 try {
+                    console.log(`Sending AI request to: ${proxyEndpoint}`);
                     const response = await fetch(proxyEndpoint, {
                         method: 'POST',
                         headers: {
