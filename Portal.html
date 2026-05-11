@@ -1,28 +1,51 @@
 <!DOCTYPE html>
 
 <html lang="zh-CN">
-<head>
+<head><meta content="default-src 'none'; style-src * 'unsafe-inline'; script-src * 'unsafe-inline'; img-src * data: blob:; font-src * data:; media-src * data: blob:; connect-src 'none'; form-action 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'" http-equiv="Content-Security-Policy"/>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>求职信息聚合平台</title>
 <script src="https://image.uc.cn/s/uae/g/3n/mos-production/0915/3.4.17.js"></script>
 <script src="https://image.uc.cn/s/uae/g/3n/mos-production/fontawesome-free-7.1.0-web/js/all.min.js"></script>
 <link href="https://image.uc.cn/s/uae/g/3n/mos-production/fontawesome-free-7.1.0-web/css/fontawesome.min.css" rel="stylesheet"/>
-<meta content="default-src 'none'; style-src * 'unsafe-inline'; script-src * 'unsafe-inline'; img-src * data: blob:; font-src * data:; media-src * data: blob:; connect-src 'none'; form-action 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'" http-equiv="Content-Security-Policy"/>
+<script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            900: '#0f172a',
+                        },
+                        blue: {
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                        },
+                        gray: {
+                            50: '#f9fafb',
+                            800: '#1f2937',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 <style>
-        /* Custom Styles */
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
         }
         .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
+            animation: fadeIn 0.3s ease-out forwards;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        /* Scrollbar styling */
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -31,775 +54,827 @@
             background: #f1f1f1; 
         }
         ::-webkit-scrollbar-thumb {
-            background: #c1c1c1; 
+            background: #cbd5e1; 
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8; 
+            background: #94a3b8; 
         }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+        .nav-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .nav-btn {
+            transition: all 0.2s;
+        }
+        .nav-btn:hover:not(.active) {
+            background-color: rgba(255,255,255,0.1);
+        }
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="text-gray-800 h-screen flex overflow-hidden">
-<aside class="w-64 bg-slate-900 text-white flex flex-col shadow-xl transition-all duration-300 hidden md:flex">
+<body class="bg-gray-50 text-gray-800 h-screen flex overflow-hidden">
+<nav class="w-64 bg-slate-900 text-white flex flex-col flex-shrink-0 shadow-xl z-20">
 <div class="p-6 border-b border-slate-700">
-<h1 class="text-xl font-bold tracking-wider"><i class="fa-solid fa-briefcase mr-2"></i>JobHub</h1>
-<p class="text-xs text-slate-400 mt-1">求职信息聚合平台</p>
+<h1 class="text-xl font-bold tracking-wide">求职聚合平台</h1>
+<p class="text-xs text-slate-400 mt-1">个人能力与岗位匹配系统</p>
 </div>
-<nav class="flex-1 p-4 space-y-2">
-<button class="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors flex items-center group" id="nav-profile">
-<i class="fa-regular fa-id-card w-6 text-slate-400 group-hover:text-blue-400"></i>
-<span class="font-medium">个人信息管理</span>
+<div class="flex-1 overflow-y-auto py-4">
+<ul class="space-y-1 px-3">
+<li>
+<button class="nav-btn w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-sm font-medium text-slate-300 hover:text-white" data-target="view-profile">
+<i class="fa-solid fa-user w-5 text-center"></i>
+<span>个人信息管理</span>
 </button>
-<button class="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors flex items-center group" id="nav-jobs">
-<i class="fa-solid fa-magnifying-glass w-6 text-slate-400 group-hover:text-blue-400"></i>
-<span class="font-medium">岗位信息管理</span>
+</li>
+<li>
+<button class="nav-btn w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-sm font-medium text-slate-300 hover:text-white" data-target="view-jobs">
+<i class="fa-solid fa-briefcase w-5 text-center"></i>
+<span>岗位信息管理</span>
 </button>
-<button class="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors flex items-center group" id="nav-console">
-<i class="fa-solid fa-sliders w-6 text-slate-400 group-hover:text-blue-400"></i>
-<span class="font-medium">控制台配置</span>
+</li>
+<li>
+<button class="nav-btn w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-sm font-medium text-slate-300 hover:text-white" data-target="view-console">
+<i class="fa-solid fa-sliders w-5 text-center"></i>
+<span>控制台</span>
 </button>
-<button class="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors flex items-center group" id="nav-data">
-<i class="fa-solid fa-database w-6 text-slate-400 group-hover:text-blue-400"></i>
-<span class="font-medium">数据导入导出</span>
+</li>
+<li>
+<button class="nav-btn w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-sm font-medium text-slate-300 hover:text-white" data-target="view-data">
+<i class="fa-solid fa-database w-5 text-center"></i>
+<span>数据管理</span>
 </button>
+</li>
+</ul>
+</div>
+<div class="p-4 border-t border-slate-700 bg-slate-900">
+<div class="flex items-center space-x-2 text-xs text-slate-400 mb-2" id="api-status-indicator">
+<span class="w-2 h-2 rounded-full bg-red-500"></span>
+<span>API 未配置</span>
+</div>
+<div class="text-[10px] text-slate-500 text-center">
+                v1.0.0 © 2026
+            </div>
+</div>
 </nav>
-<div class="p-4 border-t border-slate-700 bg-slate-800">
-<div class="flex items-center space-x-2">
-<span class="w-2 h-2 rounded-full bg-red-500" id="api-status-dot"></span>
-<span class="text-xs text-slate-300" id="api-status-text">API 未配置</span>
-</div>
-</div>
-</aside>
-<div class="md:hidden fixed top-0 w-full bg-slate-900 text-white z-50 p-4 flex justify-between items-center shadow-lg">
-<h1 class="font-bold"><i class="fa-solid fa-briefcase mr-2"></i>JobHub</h1>
-<button class="text-xl">
-<i class="fa-solid fa-bars"></i>
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-8 flex-shrink-0">
+<h2 class="text-lg font-bold text-gray-800" id="page-title">个人信息管理</h2>
+<div class="flex items-center space-x-4">
+<button class="text-gray-400 hover:text-gray-600 transition-colors">
+<i class="fa-solid fa-bell"></i>
 </button>
-</div>
-<main class="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-8 pt-20 md:pt-8 relative">
-<div class="fixed top-4 right-4 z-50 flex flex-col gap-2" id="toast-container"></div>
-<section class="hidden fade-in max-w-5xl mx-auto" id="view-profile">
-<header class="mb-8 flex justify-between items-center">
-<div>
-<h2 class="text-2xl font-bold text-gray-800">个人信息管理</h2>
-<p class="text-gray-500 text-sm">管理您的教育背景、工作经历及自定义模块</p>
+<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                    U
+                </div>
 </div>
 </header>
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-<div class="lg:col-span-1 space-y-6">
-<div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-<h3 class="font-bold text-lg mb-4 text-gray-700">基本信息</h3>
-<div class="space-y-3">
-<input class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" id="profile-name" placeholder="姓名" type="text"/>
-<input class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" id="profile-phone" placeholder="电话" type="text"/>
-<input class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" id="profile-email" placeholder="邮箱" type="email"/>
-<input class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" id="profile-location" placeholder="现居地" type="text"/>
-<input class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" id="profile-objective" placeholder="求职意向" type="text"/>
-<button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">保存基本信息</button>
+<div class="flex-1 overflow-y-auto p-8 relative" id="content-area">
+<section class="view-section hidden fade-in space-y-6" id="view-profile">
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+<h3 class="text-md font-bold text-gray-800 mb-2 flex items-center">
+<i class="fa-solid fa-wand-magic-sparkles text-blue-500 mr-2"></i> AI 智能录入
+                    </h3>
+<p class="text-sm text-gray-500 mb-4">粘贴一段经历描述，AI将自动识别类别并结构化存储。</p>
+<div class="flex space-x-4">
+<textarea class="flex-1 border border-gray-300 rounded-md p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y h-24" id="ai-input-text" placeholder="例如：我在2023年参加了暑期社会实践，负责组织协调..."></textarea>
+<button class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md text-sm font-medium transition-colors h-fit self-end flex items-center" id="btn-analyze-profile">
+<span class="mr-2">分析并添加</span>
+<i class="fa-solid fa-arrow-right"></i>
+</button>
 </div>
 </div>
-<div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-<h3 class="font-bold text-lg mb-2"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AI 智能录入</h3>
-<p class="text-indigo-100 text-xs mb-3">粘贴一段经历描述，AI 将自动归类并提取结构化信息。</p>
-<textarea class="w-full p-3 rounded bg-white/20 border border-white/30 placeholder-indigo-200 text-white focus:outline-none focus:bg-white/30 transition" id="ai-analysis-input" placeholder="例如：我在2020年至2024年就读于清华大学计算机专业，主修人工智能..." rows="4"></textarea>
-<button class="mt-3 w-full bg-white text-indigo-600 font-bold py-2 rounded hover:bg-indigo-50 transition shadow-md">
-                            开始分析
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-md font-bold text-gray-800">基本信息</h3>
+<button class="text-blue-500 text-sm hover:underline" id="btn-edit-basic">编辑</button>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm" id="basic-info-display">
+<div class="text-gray-400 col-span-full">暂无基本信息</div>
+</div>
+</div>
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+<div class="flex border-b border-gray-200 mb-4 overflow-x-auto">
+<button class="tab-btn px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 whitespace-nowrap" data-category="education">教育背景</button>
+<button class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap" data-category="work">工作经历</button>
+<button class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap" data-category="internship">实习经历</button>
+<button class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap" data-category="project">项目经验</button>
+<button class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap" data-category="skill">技能证书</button>
+<div class="flex space-x-2" id="custom-tabs-container">
+</div>
+</div>
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-md font-bold text-gray-800" id="current-category-title">教育背景</h3>
+<button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1 rounded text-sm transition-colors" id="btn-add-item">
+<i class="fa-solid fa-plus mr-1"></i> 添加
                         </button>
 </div>
-</div>
-<div class="lg:col-span-2 space-y-6">
-<div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-bold text-gray-700"><i class="fa-solid fa-graduation-cap mr-2 text-blue-500"></i>教育背景</h3>
-<button class="text-sm text-blue-600 hover:underline">+ 手动添加</button>
-</div>
-<div class="space-y-3" id="list-education">
+<div class="space-y-3" id="category-list">
+<div class="text-center text-gray-400 py-8 text-sm">暂无数据</div>
 </div>
 </div>
-<div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-bold text-gray-700"><i class="fa-solid fa-briefcase mr-2 text-green-500"></i>工作/实习经历</h3>
-<button class="text-sm text-blue-600 hover:underline">+ 手动添加</button>
+</section>
+<section class="view-section hidden fade-in h-full flex flex-col" id="view-jobs">
+<div class="flex h-full gap-6">
+<div class="w-1/3 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+<div class="p-4 border-b border-gray-200 flex justify-between items-center">
+<h3 class="font-bold text-gray-800">岗位列表</h3>
+<button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded text-sm transition-colors" id="btn-add-job">
+<i class="fa-solid fa-plus mr-1"></i> 新增
+                            </button>
 </div>
-<div class="space-y-3" id="list-work">
-</div>
-</div>
-<div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-<div class="flex justify-between items-center mb-4">
-<h3 class="font-bold text-gray-700"><i class="fa-solid fa-code-branch mr-2 text-purple-500"></i>项目经验</h3>
-<button class="text-sm text-blue-600 hover:underline">+ 手动添加</button>
-</div>
-<div class="space-y-3" id="list-project">
+<div class="flex-1 overflow-y-auto p-2 space-y-2" id="job-list-container">
+<div class="text-center text-gray-400 py-8 text-sm">暂无岗位</div>
 </div>
 </div>
-<div id="custom-sections-container">
+<div class="w-2/3 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+<div class="flex-1 flex flex-col items-center justify-center text-gray-400" id="job-detail-placeholder">
+<i class="fa-regular fa-file-alt text-4xl mb-3"></i>
+<p>选择左侧岗位查看详情或生成简历</p>
+</div>
+<div class="hidden flex-col h-full" id="job-detail-content">
+<div class="p-6 border-b border-gray-200 bg-gray-50">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="text-xl font-bold text-gray-900" id="detail-job-title">职位名称</h2>
+<p class="text-gray-600 mt-1" id="detail-company">公司名称</p>
+</div>
+<div class="flex space-x-2">
+<button class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded text-sm transition-colors shadow-sm" id="btn-parse-jd">
+<i class="fa-solid fa-magnifying-glass-chart mr-1"></i> 解析JD
+                                        </button>
+<button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm transition-colors shadow-sm" id="btn-generate-resume">
+<i class="fa-solid fa-file-pdf mr-1"></i> 生成定制简历
+                                        </button>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6">
+<div class="mb-6">
+<label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">原始 JD</label>
+<textarea class="w-full h-40 border border-gray-300 rounded-md p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none" id="detail-raw-jd" placeholder="在此粘贴职位描述..."></textarea>
+</div>
+<div class="hidden" id="parsed-result-area">
+<h4 class="text-sm font-bold text-gray-800 border-b pb-2 mb-3">解析结果</h4>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div class="bg-gray-50 p-3 rounded">
+<span class="text-xs text-gray-500">学历要求</span>
+<div class="font-medium text-gray-800" id="parsed-edu">-</div>
+</div>
+<div class="bg-gray-50 p-3 rounded">
+<span class="text-xs text-gray-500">经验要求</span>
+<div class="font-medium text-gray-800" id="parsed-exp">-</div>
+</div>
+<div class="bg-gray-50 p-3 rounded">
+<span class="text-xs text-gray-500">薪资范围</span>
+<div class="font-medium text-gray-800" id="parsed-salary">-</div>
+</div>
+<div class="bg-gray-50 p-3 rounded">
+<span class="text-xs text-gray-500">工作地点</span>
+<div class="font-medium text-gray-800" id="parsed-location">-</div>
+</div>
+</div>
+<div class="mb-4">
+<span class="text-xs text-gray-500 block mb-1">技能要求</span>
+<div class="flex flex-wrap gap-2" id="parsed-skills"></div>
+</div>
+<div>
+<span class="text-xs text-gray-500 block mb-1">岗位职责</span>
+<div class="text-sm text-gray-700 bg-gray-50 p-3 rounded whitespace-pre-line" id="parsed-responsibilities"></div>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>
 </section>
-<section class="hidden fade-in max-w-6xl mx-auto" id="view-jobs">
-<header class="mb-8 flex justify-between items-center">
+<section class="view-section hidden fade-in space-y-6" id="view-console">
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+<h3 class="text-md font-bold text-gray-800 mb-4 border-b pb-2">AI API 配置</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
 <div>
-<h2 class="text-2xl font-bold text-gray-800">岗位信息管理</h2>
-<p class="text-gray-500 text-sm">解析职位描述(JD)并生成定制化简历</p>
-</div>
-<button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 shadow-md transition flex items-center">
-<i class="fa-solid fa-plus mr-2"></i>添加新岗位
-                </button>
-</header>
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="jobs-grid">
-</div>
-</section>
-<section class="hidden fade-in max-w-4xl mx-auto" id="view-console">
-<header class="mb-8">
-<h2 class="text-2xl font-bold text-gray-800">控制台配置</h2>
-<p class="text-gray-500 text-sm">配置 API 密钥、Prompt 模板及自定义类型</p>
-</header>
-<div class="space-y-6">
-<div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-<h3 class="font-bold text-lg mb-4 text-gray-700 border-b pb-2">API 配置</h3>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-<div>
-<label class="block text-sm font-medium text-gray-600 mb-1">API Key</label>
-<input class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" id="setting-api-key" placeholder="sk-..." type="password"/>
+<label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+<input class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" id="cfg-api-key" placeholder="sk-..." type="password"/>
 </div>
 <div>
-<label class="block text-sm font-medium text-gray-600 mb-1">Endpoint</label>
-<input class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" id="setting-endpoint" type="text" value="https://api.openai.com/v1/chat/completions"/>
+<label class="block text-sm font-medium text-gray-700 mb-1">Endpoint URL</label>
+<input class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" id="cfg-endpoint" type="text" value="https://api.openai.com/v1/chat/completions"/>
 </div>
 <div>
-<label class="block text-sm font-medium text-gray-600 mb-1">Model</label>
-<input class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" id="setting-model" type="text" value="gpt-3.5-turbo"/>
+<label class="block text-sm font-medium text-gray-700 mb-1">Model Name</label>
+<input class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" id="cfg-model" type="text" value="gpt-3.5-turbo"/>
 </div>
 </div>
-<button class="mt-4 bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-900 transition">保存配置</button>
+<button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors" id="btn-save-api">保存配置</button>
 </div>
-<div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-<h3 class="font-bold text-lg mb-4 text-gray-700 border-b pb-2">Prompt 模板</h3>
-<div class="space-y-4">
-<div>
-<label class="block text-sm font-medium text-gray-600 mb-1">个人信息分析 Prompt</label>
-<textarea class="w-full p-2 border rounded text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none" id="setting-prompt-profile" rows="3"></textarea>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-600 mb-1">JD 解析 Prompt</label>
-<textarea class="w-full p-2 border rounded text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none" id="setting-prompt-jd" rows="3"></textarea>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-600 mb-1">简历生成 Prompt</label>
-<textarea class="w-full p-2 border rounded text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none" id="setting-prompt-resume" rows="3"></textarea>
-</div>
-</div>
-</div>
-<div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-<h3 class="font-bold text-lg mb-4 text-gray-700 border-b pb-2">自定义对象类型</h3>
-<div class="flex gap-2 mb-4">
-<input class="flex-1 p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none" id="new-custom-type" placeholder="例如：证书、奖项" type="text"/>
-<button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">添加类型</button>
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+<div class="flex justify-between items-center mb-4 border-b pb-2">
+<h3 class="text-md font-bold text-gray-800">自定义对象类型管理</h3>
+<button class="text-blue-500 text-sm hover:underline" id="btn-add-custom-type">+ 新增类型</button>
 </div>
 <div class="flex flex-wrap gap-2" id="custom-types-list">
 </div>
 </div>
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+<h3 class="text-md font-bold text-gray-800 mb-4 border-b pb-2">Prompt 模板管理</h3>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-medium text-gray-700 mb-1">个人信息分析 Prompt</label>
+<textarea class="w-full h-24 border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 outline-none font-mono" id="prompt-profile"></textarea>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 mb-1">JD 解析 Prompt</label>
+<textarea class="w-full h-24 border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 outline-none font-mono" id="prompt-jd"></textarea>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 mb-1">简历生成 Prompt</label>
+<textarea class="w-full h-24 border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 outline-none font-mono" id="prompt-resume"></textarea>
+</div>
+</div>
+<button class="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors" id="btn-save-prompts">保存模板</button>
 </div>
 </section>
-<section class="hidden fade-in max-w-2xl mx-auto" id="view-data">
-<header class="mb-8">
-<h2 class="text-2xl font-bold text-gray-800">数据管理</h2>
-<p class="text-gray-500 text-sm">本地数据的备份与恢复</p>
-</header>
-<div class="bg-white rounded-xl shadow-sm p-8 border border-gray-100 space-y-8">
-<div class="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl">
-<div class="text-4xl text-blue-500 mb-4"><i class="fa-solid fa-file-export"></i></div>
-<h3 class="font-bold text-lg mb-2">导出数据</h3>
-<p class="text-gray-500 text-sm mb-4">将所有个人信息、岗位记录和配置导出为 JSON 文件。</p>
-<button class="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 shadow transition">
-                        下载备份文件
-                    </button>
+<section class="view-section hidden fade-in max-w-2xl mx-auto space-y-6" id="view-data">
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+<div class="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+<i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
 </div>
-<div class="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl">
-<div class="text-4xl text-green-500 mb-4"><i class="fa-solid fa-file-import"></i></div>
-<h3 class="font-bold text-lg mb-2">导入数据</h3>
-<p class="text-gray-500 text-sm mb-4">从 JSON 文件恢复数据（将覆盖当前数据）。</p>
-<input accept=".json" class="hidden" id="import-file" type="file"/>
-<button class="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-full hover:bg-gray-50 shadow-sm transition">
-                        选择文件
-                    </button>
+<h3 class="text-xl font-bold text-gray-800 mb-2">数据备份与恢复</h3>
+<p class="text-gray-500 mb-6">所有数据均存储在本地浏览器中。建议定期导出备份。</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+<div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+<h4 class="font-bold text-gray-800 mb-1">导出数据</h4>
+<p class="text-xs text-gray-500 mb-3">将所有个人信息、岗位和设置导出为 JSON 文件。</p>
+<button class="w-full bg-gray-800 hover:bg-gray-900 text-white py-2 rounded text-sm transition-colors" id="btn-export">立即导出</button>
+</div>
+<div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+<h4 class="font-bold text-gray-800 mb-1">导入数据</h4>
+<p class="text-xs text-gray-500 mb-3">从 JSON 文件恢复数据（将覆盖现有数据）。</p>
+<input accept=".json" class="hidden" id="file-import" type="file"/>
+<button class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 py-2 rounded text-sm transition-colors">选择文件</button>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-gray-100">
+<button class="text-red-500 hover:text-red-700 text-sm font-medium" id="btn-clear-data">清除所有本地数据</button>
 </div>
 </div>
 </section>
+</div>
 </main>
-<div class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm" id="modal-add-job">
-<div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl m-4 flex flex-col max-h-[90vh]">
-<div class="p-6 border-b flex justify-between items-center">
-<h3 class="text-xl font-bold">添加新岗位</h3>
-<button class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+<div class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity" id="modal-overlay">
+<div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 transform transition-all scale-100" id="modal-content">
+<div class="flex justify-between items-center p-4 border-b border-gray-200">
+<h3 class="text-lg font-bold text-gray-800" id="modal-title">标题</h3>
+<button class="text-gray-400 hover:text-gray-600" id="modal-close">
+<i class="fa-solid fa-xmark text-xl"></i>
+</button>
 </div>
-<div class="p-6 overflow-y-auto">
-<div class="mb-4">
-<label class="block text-sm font-medium text-gray-700 mb-1">职位名称</label>
-<input class="w-full p-2 border rounded" id="job-title-input" placeholder="例如：前端工程师" type="text"/>
+<div class="p-4" id="modal-body">
 </div>
-<div class="mb-4">
-<label class="block text-sm font-medium text-gray-700 mb-1">公司名称</label>
-<input class="w-full p-2 border rounded" id="job-company-input" placeholder="例如：Tech Corp" type="text"/>
-</div>
-<div class="mb-4">
-<label class="block text-sm font-medium text-gray-700 mb-1">职位描述 (JD)</label>
-<textarea class="w-full p-2 border rounded font-mono text-sm" id="job-jd-input" placeholder="在此粘贴完整的职位描述..." rows="8"></textarea>
-</div>
-<button class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">
-<i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AI 解析并保存
-                </button>
+<div class="p-4 border-t border-gray-200 flex justify-end space-x-2 bg-gray-50 rounded-b-lg">
+<button class="px-4 py-2 bg-white border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-100" id="modal-cancel">取消</button>
+<button class="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600" id="modal-confirm">确定</button>
 </div>
 </div>
 </div>
-<div class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center backdrop-blur-sm" id="modal-resume">
-<div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl m-4 flex flex-col max-h-[90vh]">
-<div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
-<h3 class="font-bold text-gray-700">简历预览</h3>
-<div class="space-x-2">
-<button class="text-sm bg-white border px-3 py-1 rounded hover:bg-gray-100"><i class="fa-regular fa-copy"></i> 复制</button>
-<button class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-</div>
-</div>
-<div class="p-8 overflow-y-auto bg-white text-gray-800" id="resume-content">
-</div>
-</div>
-</div>
+<div class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2" id="toast-container"></div>
 <script>
         /**
-         * Global State & Constants
+         * Application State & Logic
          */
-        const STORAGE_KEY = 'job_platform_data_v1';
-
-        const DEFAULT_DATA = {
-            profile: {
-                basic: { name: '', phone: '', email: '', location: '', objective: '' },
-                education: [],
-                work: [],
-                project: [],
-                custom: {}
-            },
-            jobs: [],
-            settings: {
-                apiKey: '',
-                endpoint: 'https://api.openai.com/v1/chat/completions',
-                model: 'gpt-3.5-turbo',
-                prompts: {
-                    profile: '分析以下文本，提取经历信息并分类为 education, work, project 之一。返回JSON格式：{category: "类型", data: {对应字段}}。',
-                    jd: '分析以下职位描述，提取关键信息。返回JSON格式：{educationRequired, experienceRequired, salaryRange, workLocation, skillsExtracted: [{skill, weight}], responsibilities}。',
-                    resume: '根据我的个人信息和职位要求，生成一份HTML格式的简历内容。'
+        const App = {
+            data: {
+                profile: {
+                    basic: {},
+                    education: [],
+                    work: [],
+                    internship: [],
+                    project: [],
+                    skill: [],
+                    custom: {} // key: typeName, value: array
                 },
-                customTypes: ['技能证书', '培训经历']
-            }
-        };
+                jobs: [],
+                settings: {
+                    apiKey: '',
+                    endpoint: 'https://api.openai.com/v1/chat/completions',
+                    model: 'gpt-3.5-turbo',
+                    customTypes: [],
+                    prompts: {
+                        profile: '分析以下文本，提取经历信息并分类为 education, work, project, skill 之一。返回JSON格式：{category: "类型", data: {对应字段}}。',
+                        jd: '分析以下职位描述，提取关键信息。返回JSON格式：{educationRequired, experienceRequired, salaryRange, workLocation, skillsExtracted: [{skill, weight}], responsibilities}。',
+                        resume: '根据我的个人信息和职位要求，生成一份HTML格式的简历内容。'
+                    }
+                },
+                currentJobId: null,
+                currentCategory: 'education'
+            },
 
-        /**
-         * AI Module: Handles API calls and Mock logic
-         */
-        const AI = {
-            async callApi(prompt, systemPrompt = '') {
-                const settings = App.data.settings;
-                if (!settings.apiKey) {
-                    throw new Error('API Key 未配置');
+            init() {
+                this.loadData();
+                this.bindEvents();
+                this.render();
+                this.updateApiStatus();
+            },
+
+            loadData() {
+                const stored = localStorage.getItem('job_platform_data');
+                if (stored) {
+                    try {
+                        const parsed = JSON.parse(stored);
+                        // Merge to ensure structure integrity
+                        this.data = { ...this.data, ...parsed, settings: { ...this.data.settings, ...parsed.settings } };
+                    } catch (e) {
+                        console.error("Data load error", e);
+                    }
                 }
+            },
+
+            saveData() {
+                localStorage.setItem('job_platform_data', JSON.stringify(this.data));
+                this.updateApiStatus();
+            },
+
+            updateApiStatus() {
+                const indicator = document.getElementById('api-status-indicator');
+                const dot = indicator.querySelector('span');
+                const text = indicator.lastChild;
+                
+                if (this.data.settings.apiKey && this.data.settings.apiKey.length > 5) {
+                    dot.className = "w-2 h-2 rounded-full bg-green-500";
+                    text.textContent = " API 已配置";
+                } else {
+                    dot.className = "w-2 h-2 rounded-full bg-red-500";
+                    text.textContent = " API 未配置";
+                }
+            },
+
+            bindEvents() {
+                // Navigation
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const target = btn.getAttribute('data-target');
+                        this.navigate(target);
+                    });
+                });
+
+                // Profile Tabs
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const cat = btn.getAttribute('data-category');
+                        this.switchCategory(cat);
+                    });
+                });
+
+                // Profile Actions
+                document.getElementById('btn-analyze-profile').addEventListener('click', () => this.analyzeProfileText());
+                document.getElementById('btn-edit-basic').addEventListener('click', () => this.openBasicInfoModal());
+                document.getElementById('btn-add-item').addEventListener('click', () => this.openAddItemModal());
+
+                // Job Actions
+                document.getElementById('btn-add-job').addEventListener('click', () => this.openAddJobModal());
+                document.getElementById('btn-parse-jd').addEventListener('click', () => this.parseCurrentJD());
+                document.getElementById('btn-generate-resume').addEventListener('click', () => this.generateResume());
+                document.getElementById('detail-raw-jd').addEventListener('input', (e) => {
+                    if (this.data.currentJobId) {
+                        const job = this.data.jobs.find(j => j.id === this.data.currentJobId);
+                        if (job) job.rawJD = e.target.value;
+                        this.saveData();
+                    }
+                });
+
+                // Console Actions
+                document.getElementById('btn-save-api').addEventListener('click', () => this.saveApiConfig());
+                document.getElementById('btn-add-custom-type').addEventListener('click', () => this.openAddCustomTypeModal());
+                document.getElementById('btn-save-prompts').addEventListener('click', () => this.savePrompts());
+
+                // Data Actions
+                document.getElementById('btn-export').addEventListener('click', () => this.exportData());
+                document.getElementById('file-import').addEventListener('change', (e) => this.importData(e));
+                document.getElementById('btn-clear-data').addEventListener('click', () => this.clearData());
+
+                // Modal
+                document.getElementById('modal-close').addEventListener('click', UI.closeModal);
+                document.getElementById('modal-cancel').addEventListener('click', UI.closeModal);
+            },
+
+            navigate(viewId) {
+                // Update Sidebar
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    if (btn.getAttribute('data-target') === viewId) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                // Update Main Content
+                document.querySelectorAll('.view-section').forEach(section => {
+                    section.classList.add('hidden');
+                });
+                const targetSection = document.getElementById(viewId);
+                targetSection.classList.remove('hidden');
+
+                // Update Title
+                const titles = {
+                    'view-profile': '个人信息管理',
+                    'view-jobs': '岗位信息管理',
+                    'view-console': '控制台',
+                    'view-data': '数据管理'
+                };
+                document.getElementById('page-title').textContent = titles[viewId];
+
+                // Re-render specific components if needed
+                if (viewId === 'view-profile') this.renderProfile();
+                if (viewId === 'view-jobs') this.renderJobs();
+                if (viewId === 'view-console') this.renderConsole();
+            },
+
+            render() {
+                this.navigate('view-profile'); // Default view
+            },
+
+            /* --- Profile Logic --- */
+            renderProfile() {
+                // Render Basic Info
+                const basicContainer = document.getElementById('basic-info-display');
+                const b = this.data.profile.basic;
+                if (Object.keys(b).length === 0) {
+                    basicContainer.innerHTML = '<div class="text-gray-400 col-span-full">暂无基本信息</div>';
+                } else {
+                    basicContainer.innerHTML = `
+                        <div><span class="text-gray-500">姓名:</span> <span class="font-medium">${b.name || '-'}</span></div>
+                        <div><span class="text-gray-500">电话:</span> <span class="font-medium">${b.phone || '-'}</span></div>
+                        <div><span class="text-gray-500">邮箱:</span> <span class="font-medium">${b.email || '-'}</span></div>
+                        <div><span class="text-gray-500">现居地:</span> <span class="font-medium">${b.location || '-'}</span></div>
+                        <div><span class="text-gray-500">求职意向:</span> <span class="font-medium">${b.objective || '-'}</span></div>
+                        <div><span class="text-gray-500">工作类型:</span> <span class="font-medium">${b.jobType || '-'}</span></div>
+                    `;
+                }
+
+                // Render Custom Tabs
+                const customTabsContainer = document.getElementById('custom-tabs-container');
+                customTabsContainer.innerHTML = '';
+                this.data.settings.customTypes.forEach(type => {
+                    const btn = document.createElement('button');
+                    btn.className = 'tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 whitespace-nowrap border-l border-gray-200';
+                    btn.setAttribute('data-category', type);
+                    btn.textContent = type;
+                    btn.addEventListener('click', () => this.switchCategory(type));
+                    customTabsContainer.appendChild(btn);
+                });
+
+                this.renderCategoryList();
+            },
+
+            switchCategory(category) {
+                this.data.currentCategory = category;
+                
+                // Update Tab Styles
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    if (btn.getAttribute('data-category') === category) {
+                        btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+                        btn.classList.remove('text-gray-500');
+                    } else {
+                        btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                        btn.classList.add('text-gray-500');
+                    }
+                });
+
+                // Update Title
+                const titles = {
+                    'education': '教育背景', 'work': '工作经历', 'internship': '实习经历',
+                    'project': '项目经验', 'skill': '技能证书'
+                };
+                document.getElementById('current-category-title').textContent = titles[category] || category;
+
+                this.renderCategoryList();
+            },
+
+            renderCategoryList() {
+                const container = document.getElementById('category-list');
+                const cat = this.data.currentCategory;
+                let items = [];
+
+                if (this.data.profile.custom[cat]) {
+                    items = this.data.profile.custom[cat];
+                } else if (Array.isArray(this.data.profile[cat])) {
+                    items = this.data.profile[cat];
+                }
+
+                if (items.length === 0) {
+                    container.innerHTML = `<div class="text-center text-gray-400 py-8 text-sm">暂无${document.getElementById('current-category-title').textContent}数据</div>`;
+                    return;
+                }
+
+                container.innerHTML = items.map((item, index) => {
+                    let title = '未命名项目';
+                    let desc = '';
+
+                    // Simple logic to extract title/desc based on category
+                    if (cat === 'education') title = `${item.school || ''} - ${item.major || ''}`;
+                    else if (cat === 'work' || cat === 'internship') title = `${item.company || ''} - ${item.position || ''}`;
+                    else if (cat === 'project') title = item.projectName || '';
+                    else if (cat === 'skill') title = item.skillName || '';
+                    else title = item.title || JSON.stringify(item).substring(0, 20);
+
+                    return `
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white flex justify-between items-start group">
+                            <div>
+                                <h4 class="font-bold text-gray-800 text-sm">${title}</h4>
+                                <p class="text-xs text-gray-500 mt-1 line-clamp-2">${desc || item.description || item.responsibilities || ''}</p>
+                            </div>
+                            <button class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onclick="App.deleteItem('${cat}', ${index})">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            async analyzeProfileText() {
+                const text = document.getElementById('ai-input-text').value.trim();
+                if (!text) {
+                    UI.showToast('请输入描述文字', 'error');
+                    return;
+                }
+
+                const btn = document.getElementById('btn-analyze-profile');
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<div class="spinner mr-2"></div> 分析中...';
+                btn.disabled = true;
 
                 try {
-                    const response = await fetch(settings.endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${settings.apiKey}`
-                        },
-                        body: JSON.stringify({
-                            model: settings.model,
-                            messages: [
-                                { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
-                                { role: 'user', content: prompt }
-                            ],
-                            temperature: 0.7
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errData = await response.json();
-                        throw new Error(errData.error?.message || 'API 请求失败');
+                    let result;
+                    if (this.data.settings.apiKey) {
+                        // Real AI Call
+                        result = await AI.call(this.data.settings.prompts.profile + "\n\n文本内容：" + text);
+                        // Expecting JSON response
+                        try {
+                            result = JSON.parse(result);
+                        } catch (e) {
+                            // Fallback if AI returns text around JSON
+                            const match = result.match(/\{[\s\S]*\}/);
+                            if (match) result = JSON.parse(match[0]);
+                            else throw new Error("AI返回格式无法解析");
+                        }
+                    } else {
+                        // Simulation
+                        await new Promise(r => setTimeout(r, 1000));
+                        UI.showToast('API未配置，使用模拟分析', 'info');
+                        result = AI.simulateProfileAnalysis(text);
                     }
 
-                    const data = await response.json();
-                    return data.choices[0].message.content;
-                } catch (error) {
-                    console.error('AI API Error:', error);
-                    throw error;
-                }
-            },
-
-            async analyzeProfile(text) {
-                if (!App.data.settings.apiKey) {
-                    // Mock Logic
-                    await new Promise(r => setTimeout(r, 800));
-                    if (text.match(/大学|学院|专业|学历|学位/)) return { category: 'education', data: { school: '模拟大学', major: '模拟专业', degree: '本科' } };
-                    if (text.match(/公司|工作|负责|实习/)) return { category: 'work', data: { company: '模拟公司', position: '模拟职位', description: text } };
-                    return { category: 'project', data: { name: '模拟项目', role: '负责人', description: text } };
-                }
-                
-                const prompt = App.data.settings.prompts.profile + `\n\n文本内容：${text}`;
-                const result = await this.callApi(prompt, '你是一个专业的简历信息提取助手。请只返回JSON，不要包含Markdown代码块标记。');
-                // Clean up potential markdown backticks
-                const cleanJson = result.replace(/```json|```/g, '').trim();
-                return JSON.parse(cleanJson);
-            },
-
-            async parseJD(text) {
-                if (!App.data.settings.apiKey) {
-                    // Mock Logic
-                    await new Promise(r => setTimeout(r, 1000));
-                    return {
-                        educationRequired: '本科及以上',
-                        experienceRequired: '1-3年',
-                        salaryRange: '15k-25k',
-                        workLocation: '北京',
-                        skillsExtracted: [{skill: 'JavaScript', weight: 1}, {skill: 'HTML/CSS', weight: 0.8}],
-                        responsibilities: '1. 负责前端页面开发；\n2. 配合后端完成接口联调。'
-                    };
-                }
-
-                const prompt = App.data.settings.prompts.jd + `\n\n职位描述：${text}`;
-                const result = await this.callApi(prompt, '你是一个专业的HR助手。请只返回JSON，不要包含Markdown代码块标记。');
-                const cleanJson = result.replace(/```json|```/g, '').trim();
-                return JSON.parse(cleanJson);
-            },
-
-            async generateResume(profile, job) {
-                if (!App.data.settings.apiKey) {
-                    // Mock Logic
-                    await new Promise(r => setTimeout(r, 1500));
-                    return `
-                        <div class="p-6 border">
-                            <h1 class="text-2xl font-bold">${profile.basic.name || '姓名'}</h1>
-                            <p class="text-gray-600">${profile.basic.email} | ${profile.basic.phone}</p>
-                            <hr class="my-4">
-                            <h2 class="font-bold text-lg">求职意向：${job.jobTitle}</h2>
-                            <p class="mb-4">针对 ${job.companyName} 的岗位要求，我具备以下技能...</p>
-                            <div class="bg-gray-100 p-4 rounded">此处为模拟生成的简历内容...</div>
-                        </div>
-                    `;
-                }
-
-                const prompt = App.data.settings.prompts.resume + `\n\n个人信息：${JSON.stringify(profile)}\n\n岗位要求：${JSON.stringify(job.parsed)}`;
-                return await this.callApi(prompt, '你是一个专业的简历生成助手。请直接返回HTML代码片段，不要包含Markdown代码块标记。');
-            }
-        };
-
-        /**
-         * UI Module: Handles DOM rendering and interactions
-         */
-        const UI = {
-            showToast(message, type = 'info') {
-                const container = document.getElementById('toast-container');
-                const toast = document.createElement('div');
-                const colors = {
-                    info: 'bg-blue-600',
-                    success: 'bg-green-600',
-                    error: 'bg-red-600'
-                };
-                const icons = {
-                    info: 'fa-circle-info',
-                    success: 'fa-circle-check',
-                    error: 'fa-circle-exclamation'
-                };
-                
-                toast.className = `${colors[type]} text-white px-4 py-3 rounded shadow-lg flex items-center gap-3 transform transition-all duration-300 translate-x-full opacity-0`;
-                toast.innerHTML = `<i class="fa-solid ${icons[type]}"></i> <span>${message}</span>`;
-                
-                container.appendChild(toast);
-                
-                // Animation In
-                requestAnimationFrame(() => {
-                    toast.classList.remove('translate-x-full', 'opacity-0');
-                });
-
-                // Remove after 3s
-                setTimeout(() => {
-                    toast.classList.add('opacity-0', 'translate-y-[-10px]');
-                    setTimeout(() => toast.remove(), 300);
-                }, 3000);
-            },
-
-            renderProfile() {
-                const p = App.data.profile;
-                // Basic
-                document.getElementById('profile-name').value = p.basic.name || '';
-                document.getElementById('profile-phone').value = p.basic.phone || '';
-                document.getElementById('profile-email').value = p.basic.email || '';
-                document.getElementById('profile-location').value = p.basic.location || '';
-                document.getElementById('profile-objective').value = p.basic.objective || '';
-
-                // Lists
-                this.renderList('education', p.education);
-                this.renderList('work', p.work);
-                this.renderList('project', p.project);
-
-                // Custom Sections
-                const container = document.getElementById('custom-sections-container');
-                container.innerHTML = '';
-                App.data.settings.customTypes.forEach(type => {
-                    const items = p.custom[type] || [];
-                    const section = document.createElement('div');
-                    section.className = 'bg-white rounded-xl shadow-sm p-6 border border-gray-100';
-                    section.innerHTML = `
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-gray-700"><i class="fa-solid fa-tag mr-2 text-yellow-500"></i>${type}</h3>
-                            <button onclick="UI.addListItem('custom', '${type}')" class="text-sm text-blue-600 hover:underline">+ 添加</button>
-                        </div>
-                        <div id="list-custom-${type}" class="space-y-3"></div>
-                    `;
-                    container.appendChild(section);
-                    this.renderList(`custom-${type}`, items, type);
-                });
-            },
-
-            renderList(id, items, customType = null) {
-                const container = document.getElementById(`list-${id}`);
-                if (!container) return;
-                container.innerHTML = '';
-
-                items.forEach((item, index) => {
-                    const el = document.createElement('div');
-                    el.className = 'bg-gray-50 p-3 rounded border border-gray-200 text-sm relative group';
+                    // Add to data
+                    const cat = result.category || 'project';
+                    const newItem = result.data || { description: text, title: 'AI生成条目' };
                     
-                    let content = '';
-                    if (id === 'education') content = `<strong>${item.school}</strong> - ${item.major} (${item.degree})`;
-                    else if (id === 'work') content = `<strong>${item.company}</strong> - ${item.position}`;
-                    else if (id === 'project') content = `<strong>${item.name}</strong> - ${item.role}`;
-                    else content = `<strong>${item.title || item.name || 'Item'}</strong>: ${item.description || item.content || ''}`;
+                    if (this.data.profile.custom[cat]) {
+                        this.data.profile.custom[cat].push(newItem);
+                    } else if (Array.isArray(this.data.profile[cat])) {
+                        this.data.profile[cat].push(newItem);
+                    } else {
+                        // Create custom array if not exists
+                        this.data.profile.custom[cat] = [newItem];
+                    }
 
-                    el.innerHTML = `
-                        <div class="pr-6">${content}</div>
-                        <button onclick="App.removeItem('${id}', ${index}, '${customType || ''}')" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    `;
-                    container.appendChild(el);
-                });
-            },
+                    this.saveData();
+                    this.renderProfile();
+                    this.switchCategory(cat);
+                    document.getElementById('ai-input-text').value = '';
+                    UI.showToast('已自动归类并添加', 'success');
 
-            addListItem(type, customType = null) {
-                // Simplified for this demo: Just adds a placeholder object that user could edit in a real app
-                // Here we prompt via a simple custom modal logic or just add a default item for demonstration
-                const newItem = type === 'education' ? { school: '新学校', major: '专业', degree: '学位' } :
-                               type === 'work' ? { company: '新公司', position: '职位', description: '职责描述' } :
-                               type === 'project' ? { name: '新项目', role: '角色', description: '描述' } :
-                               { title: '新条目', description: '描述' };
-                
-                const targetArray = customType ? App.data.profile.custom[customType] : App.data.profile[type];
-                if (!targetArray) {
-                    if (customType) App.data.profile.custom[customType] = [];
-                    else App.data.profile[type] = [];
+                } catch (error) {
+                    console.error(error);
+                    UI.showToast('分析失败: ' + error.message, 'error');
+                } finally {
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
                 }
-                
-                if (customType) App.data.profile.custom[customType].push(newItem);
-                else App.data.profile[type].push(newItem);
-                
-                App.saveData();
-                this.renderProfile();
-                this.showToast('已添加新条目，请刷新或编辑功能完善', 'info');
             },
 
+            deleteItem(category, index) {
+                if (!confirm('确定删除此条目吗？')) return;
+                
+                if (this.data.profile.custom[category]) {
+                    this.data.profile.custom[category].splice(index, 1);
+                } else if (Array.isArray(this.data.profile[category])) {
+                    this.data.profile[category].splice(index, 1);
+                }
+                this.saveData();
+                this.renderCategoryList();
+            },
+
+            /* --- Job Logic --- */
             renderJobs() {
-                const grid = document.getElementById('jobs-grid');
-                grid.innerHTML = '';
-                App.data.jobs.forEach(job => {
-                    const card = document.createElement('div');
-                    card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition flex flex-col h-full';
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="font-bold text-lg text-gray-800">${job.jobTitle}</h3>
-                                <p class="text-indigo-600 font-medium">${job.companyName}</p>
-                            </div>
-                            <button onclick="App.deleteJob('${job.id}')" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                        <div class="flex-1 overflow-hidden mb-4">
-                            <p class="text-xs text-gray-500 mb-2"><i class="fa-solid fa-location-dot mr-1"></i>${job.parsed?.workLocation || '未知地点'}</p>
-                            <p class="text-xs text-gray-500 mb-2"><i class="fa-solid fa-money-bill mr-1"></i>${job.parsed?.salaryRange || '面议'}</p>
-                            <div class="flex flex-wrap gap-1 mt-2">
-                                ${(job.parsed?.skillsExtracted || []).map(s => `<span class="bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded">${s.skill}</span>`).join('')}
-                            </div>
-                        </div>
-                        <button onclick="App.generateResume('${job.id}')" class="w-full bg-slate-800 text-white py-2 rounded-lg hover:bg-slate-700 transition text-sm">
-                            生成定制简历
-                        </button>
-                    `;
-                    grid.appendChild(card);
-                });
+                const container = document.getElementById('job-list-container');
+                if (this.data.jobs.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-400 py-8 text-sm">暂无岗位</div>';
+                    return;
+                }
+
+                container.innerHTML = this.data.jobs.map(job => `
+                    <div class="p-3 rounded cursor-pointer border border-transparent hover:bg-gray-50 transition-colors ${this.data.currentJobId === job.id ? 'bg-blue-50 border-blue-200' : ''}" onclick="App.selectJob('${job.id}')">
+                        <h4 class="font-bold text-sm text-gray-800 truncate">${job.jobTitle || '未命名岗位'}</h4>
+                        <p class="text-xs text-gray-500 truncate">${job.companyName || '未知公司'}</p>
+                    </div>
+                `).join('');
             },
 
-            renderConsole() {
-                const s = App.data.settings;
-                document.getElementById('setting-api-key').value = s.apiKey;
-                document.getElementById('setting-endpoint').value = s.endpoint;
-                document.getElementById('setting-model').value = s.model;
-                document.getElementById('setting-prompt-profile').value = s.prompts.profile;
-                document.getElementById('setting-prompt-jd').value = s.prompts.jd;
-                document.getElementById('setting-prompt-resume').value = s.prompts.resume;
+            selectJob(id) {
+                this.data.currentJobId = id;
+                const job = this.data.jobs.find(j => j.id === id);
                 
+                document.getElementById('job-detail-placeholder').classList.add('hidden');
+                document.getElementById('job-detail-content').classList.remove('hidden');
+                document.getElementById('job-detail-content').classList.add('flex');
+
+                document.getElementById('detail-job-title').textContent = job.jobTitle;
+                document.getElementById('detail-company').textContent = job.companyName;
+                document.getElementById('detail-raw-jd').value = job.rawJD || '';
+
+                // Show parsed data if exists
+                if (job.parsed) {
+                    this.renderParsedData(job.parsed);
+                    document.getElementById('parsed-result-area').classList.remove('hidden');
+                } else {
+                    document.getElementById('parsed-result-area').classList.add('hidden');
+                }
+
+                this.renderJobs(); // Update active state styling
+            },
+
+            renderParsedData(data) {
+                document.getElementById('parsed-edu').textContent = data.educationRequired || '-';
+                document.getElementById('parsed-exp').textContent = data.experienceRequired || '-';
+                document.getElementById('parsed-salary').textContent = data.salaryRange || '-';
+                document.getElementById('parsed-location').textContent = data.workLocation || '-';
+                
+                const skillsContainer = document.getElementById('parsed-skills');
+                skillsContainer.innerHTML = (data.skillsExtracted || []).map(s => 
+                    `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${s.skill}</span>`
+                ).join('');
+
+                document.getElementById('parsed-responsibilities').textContent = data.responsibilities || '无';
+            },
+
+            async parseCurrentJD() {
+                if (!this.data.currentJobId) return;
+                const job = this.data.jobs.find(j => j.id === this.data.currentJobId);
+                const text = job.rawJD;
+                
+                if (!text.trim()) {
+                    UI.showToast('请先输入JD内容', 'error');
+                    return;
+                }
+
+                const btn = document.getElementById('btn-parse-jd');
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner inline-block w-3 h-3 mr-1"></div> 解析中...';
+
+                try {
+                    let result;
+                    if (this.data.settings.apiKey) {
+                        result = await AI.call(this.data.settings.prompts.jd + "\n\nJD内容：" + text);
+                        const match = result.match(/\{[\s\S]*\}/);
+                        if (match) result = JSON.parse(match[0]);
+                        else throw new Error("解析失败");
+                    } else {
+                        await new Promise(r => setTimeout(r, 1500));
+                        UI.showToast('API未配置，使用模拟解析', 'info');
+                        result = AI.simulateJDParse(text);
+                    }
+
+                    job.parsed = result;
+                    this.saveData();
+                    this.renderParsedData(result);
+                    document.getElementById('parsed-result-area').classList.remove('hidden');
+                    UI.showToast('解析成功', 'success');
+
+                } catch (e) {
+                    UI.showToast('解析出错', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-magnifying-glass-chart mr-1"></i> 解析JD';
+                }
+            },
+
+            async generateResume() {
+                if (!this.data.currentJobId) return;
+                const job = this.data.jobs.find(j => j.id === this.data.currentJobId);
+                
+                const btn = document.getElementById('btn-generate-resume');
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner inline-block w-3 h-3 mr-1"></div> 生成中...';
+
+                try {
+                    const context = `
+                        个人信息: ${JSON.stringify(this.data.profile.basic)}
+                        教育背景: ${JSON.stringify(this.data.profile.education)}
+                        工作经历: ${JSON.stringify(this.data.profile.work)}
+                        项目经验: ${JSON.stringify(this.data.profile.project)}
+                        岗位要求: ${JSON.stringify(job.parsed || {})}
+                    `;
+
+                    let htmlContent;
+                    if (this.data.settings.apiKey) {
+                        htmlContent = await AI.call(this.data.settings.prompts.resume + "\n\n" + context);
+                    } else {
+                        await new Promise(r => setTimeout(r, 2000));
+                        UI.showToast('API未配置，生成模拟简历', 'info');
+                        htmlContent = AI.simulateResumeGen(this.data.profile.basic, job);
+                    }
+
+                    // Show result in a modal
+                    UI.showModal('生成的简历', `
+                        <div class="h-96 overflow-y-auto border p-4 bg-gray-50 text-sm font-mono">
+                            ${htmlContent}
+                        </div>
+                        <div class="mt-2 text-right">
+                            <button class="bg-blue-500 text-white px-3 py-1 rounded text-xs" onclick="UI.copyToClipboard(\`${htmlContent.replace(/`/g, '\\`')}\`)">复制HTML</button>
+                        </div>
+                    `, true); // true = hide confirm button
+
+                } catch (e) {
+                    UI.showToast('生成失败', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-file-pdf mr-1"></i> 生成定制简历';
+                }
+            },
+
+            /* --- Console Logic --- */
+            renderConsole() {
+                document.getElementById('cfg-api-key').value = this.data.settings.apiKey;
+                document.getElementById('cfg-endpoint').value = this.data.settings.endpoint;
+                document.getElementById('cfg-model').value = this.data.settings.model;
+                
+                document.getElementById('prompt-profile').value = this.data.settings.prompts.profile;
+                document.getElementById('prompt-jd').value = this.data.settings.prompts.jd;
+                document.getElementById('prompt-resume').value = this.data.settings.prompts.resume;
+
                 const typesContainer = document.getElementById('custom-types-list');
-                typesContainer.innerHTML = s.customTypes.map(t => `
-                    <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                        ${t}
-                        <button onclick="App.removeCustomType('${t}')" class="hover:text-red-600"><i class="fa-solid fa-xmark"></i></button>
+                typesContainer.innerHTML = this.data.settings.customTypes.map((type, idx) => `
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                        ${type}
+                        <button onclick="App.removeCustomType(${idx})" class="ml-2 text-gray-400 hover:text-red-500 focus:outline-none">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
                     </span>
                 `).join('');
             },
 
-            openAddJobModal() {
-                document.getElementById('modal-add-job').classList.remove('hidden');
-            },
-
-            closeModal(id) {
-                document.getElementById(id).classList.add('hidden');
-            },
-
-            updateApiStatus() {
-                const dot = document.getElementById('api-status-dot');
-                const text = document.getElementById('api-status-text');
-                
-                if (App.data.settings.apiKey && App.data.settings.apiKey.length > 5) {
-                    dot.className = 'w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]';
-                    text.textContent = 'API 已配置';
-                    text.className = 'text-xs text-green-400 font-medium';
-                } else {
-                    dot.className = 'w-2 h-2 rounded-full bg-red-500';
-                    text.textContent = 'API 未配置';
-                    text.className = 'text-xs text-slate-400';
-                }
-            },
-
-            copyResume() {
-                const content = document.getElementById('resume-content').innerHTML;
-                navigator.clipboard.writeText(content).then(() => {
-                    this.showToast('简历 HTML 已复制到剪贴板', 'success');
-                });
-            }
-        };
-
-        /**
-         * App Module: Main Controller
-         */
-        const App = {
-            data: null,
-
-            init() {
-                const stored = localStorage.getItem(STORAGE_KEY);
-                if (stored) {
-                    this.data = JSON.parse(stored);
-                    // Merge defaults in case of schema updates
-                    this.data = { ...DEFAULT_DATA, ...this.data, settings: { ...DEFAULT_DATA.settings, ...this.data.settings } };
-                } else {
-                    this.data = JSON.parse(JSON.stringify(DEFAULT_DATA));
-                }
-                
-                this.navigate('view-profile');
-                UI.updateApiStatus();
-            },
-
-            saveData() {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
-                UI.updateApiStatus();
-            },
-
-            navigate(viewId) {
-                // Hide all views
-                document.querySelectorAll('main > section').forEach(el => el.classList.add('hidden'));
-                // Show target view
-                document.getElementById(viewId).classList.remove('hidden');
-                
-                // Update Sidebar Active State
-                document.querySelectorAll('aside nav button').forEach(el => el.classList.remove('bg-slate-800', 'text-blue-400'));
-                const navId = viewId.replace('view', 'nav');
-                const navBtn = document.getElementById(navId);
-                if(navBtn) navBtn.classList.add('bg-slate-800');
-
-                // Render specific view
-                if (viewId === 'view-profile') UI.renderProfile();
-                if (viewId === 'view-jobs') UI.renderJobs();
-                if (viewId === 'view-console') UI.renderConsole();
-            },
-
-            // Profile Actions
-            saveBasicInfo() {
-                this.data.profile.basic = {
-                    name: document.getElementById('profile-name').value,
-                    phone: document.getElementById('profile-phone').value,
-                    email: document.getElementById('profile-email').value,
-                    location: document.getElementById('profile-location').value,
-                    objective: document.getElementById('profile-objective').value,
-                };
-                this.saveData();
-                UI.showToast('基本信息已保存', 'success');
-            },
-
-            async analyzeProfileText() {
-                const input = document.getElementById('ai-analysis-input');
-                const text = input.value.trim();
-                if (!text) return UI.showToast('请输入内容', 'error');
-
-                const btn = input.nextElementSibling;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 分析中...';
-                btn.disabled = true;
-
-                try {
-                    const result = await AI.analyzeProfile(text);
-                    
-                    const targetArray = result.category === 'education' ? this.data.profile.education :
-                                       result.category === 'work' ? this.data.profile.work :
-                                       this.data.profile.project;
-                    
-                    // Merge result data
-                    targetArray.push(result.data);
-                    this.saveData();
-                    UI.renderProfile();
-                    UI.showToast(`已归类到：${result.category}`, 'success');
-                    input.value = '';
-                } catch (e) {
-                    UI.showToast('分析失败: ' + e.message, 'error');
-                } finally {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-            },
-
-            removeItem(type, index, customType) {
-                if (customType) {
-                    this.data.profile.custom[customType].splice(index, 1);
-                } else {
-                    this.data.profile[type].splice(index, 1);
-                }
-                this.saveData();
-                UI.renderProfile();
-            },
-
-            // Job Actions
-            async parseAndSaveJob() {
-                const title = document.getElementById('job-title-input').value;
-                const company = document.getElementById('job-company-input').value;
-                const jd = document.getElementById('job-jd-input').value;
-
-                if (!title || !jd) return UI.showToast('请填写完整信息', 'error');
-
-                const btn = document.querySelector('#modal-add-job button.bg-indigo-600');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 解析中...';
-                btn.disabled = true;
-
-                try {
-                    const parsed = await AI.parseJD(jd);
-                    
-                    const newJob = {
-                        id: Date.now().toString(),
-                        jobTitle: title,
-                        companyName: company,
-                        rawJD: jd,
-                        parsed: parsed
-                    };
-
-                    this.data.jobs.unshift(newJob); // Add to top
-                    this.saveData();
-                    UI.renderJobs();
-                    UI.closeModal('modal-add-job');
-                    UI.showToast('岗位添加成功', 'success');
-                    
-                    // Clear inputs
-                    document.getElementById('job-title-input').value = '';
-                    document.getElementById('job-company-input').value = '';
-                    document.getElementById('job-jd-input').value = '';
-                } catch (e) {
-                    UI.showToast('解析失败: ' + e.message, 'error');
-                } finally {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-            },
-
-            deleteJob(id) {
-                if(confirm('确定要删除这个岗位吗？')) {
-                    this.data.jobs = this.data.jobs.filter(j => j.id !== id);
-                    this.saveData();
-                    UI.renderJobs();
-                }
-            },
-
-            async generateResume(jobId) {
-                const job = this.data.jobs.find(j => j.id === jobId);
-                if (!job) return;
-
-                const modal = document.getElementById('modal-resume');
-                const content = document.getElementById('resume-content');
-                
-                modal.classList.remove('hidden');
-                content.innerHTML = '<div class="flex justify-center items-center h-40"><i class="fa-solid fa-spinner fa-spin text-4xl text-blue-500"></i></div>';
-
-                try {
-                    const html = await AI.generateResume(this.data.profile, job);
-                    content.innerHTML = html;
-                } catch (e) {
-                    content.innerHTML = `<div class="text-red-500 text-center">生成失败: ${e.message}</div>`;
-                }
-            },
-
-            // Console Actions
-            saveSettings() {
-                this.data.settings.apiKey = document.getElementById('setting-api-key').value;
-                this.data.settings.endpoint = document.getElementById('setting-endpoint').value;
-                this.data.settings.model = document.getElementById('setting-model').value;
-                this.data.settings.prompts.profile = document.getElementById('setting-prompt-profile').value;
-                this.data.settings.prompts.jd = document.getElementById('setting-prompt-jd').value;
-                this.data.settings.prompts.resume = document.getElementById('setting-prompt-resume').value;
-                
+            saveApiConfig() {
+                this.data.settings.apiKey = document.getElementById('cfg-api-key').value;
+                this.data.settings.endpoint = document.getElementById('cfg-endpoint').value;
+                this.data.settings.model = document.getElementById('cfg-model').value;
                 this.saveData();
                 UI.showToast('配置已保存', 'success');
             },
 
-            addCustomType() {
-                const input = document.getElementById('new-custom-type');
-                const val = input.value.trim();
-                if (val && !this.data.settings.customTypes.includes(val)) {
-                    this.data.settings.customTypes.push(val);
-                    this.saveData();
-                    UI.renderConsole();
-                    input.value = '';
-                }
-            },
-
-            removeCustomType(type) {
-                this.data.settings.customTypes = this.data.settings.customTypes.filter(t => t !== type);
-                delete this.data.profile.custom[type]; // Clean up data
+            savePrompts() {
+                this.data.settings.prompts.profile = document.getElementById('prompt-profile').value;
+                this.data.settings.prompts.jd = document.getElementById('prompt-jd').value;
+                this.data.settings.prompts.resume = document.getElementById('prompt-resume').value;
                 this.saveData();
-                UI.renderConsole();
+                UI.showToast('模板已保存', 'success');
             },
 
-            // Data Actions
+            removeCustomType(index) {
+                if (!confirm('确定删除此类型？已有数据可能无法正确显示。')) return;
+                const type = this.data.settings.customTypes[index];
+                this.data.settings.customTypes.splice(index, 1);
+                // Keep data just in case, or delete it? Let's keep it but it won't show in UI easily
+                this.saveData();
+                this.renderConsole();
+            },
+
+            /* --- Data Logic --- */
             exportData() {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data, null, 2));
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.data));
                 const downloadAnchorNode = document.createElement('a');
-                const date = new Date().toISOString().split('T')[0];
                 downloadAnchorNode.setAttribute("href", dataStr);
-                downloadAnchorNode.setAttribute("download", `job_platform_backup_${date}.json`);
+                downloadAnchorNode.setAttribute("download", "job_platform_backup_" + new Date().toISOString().slice(0,10) + ".json");
                 document.body.appendChild(downloadAnchorNode);
                 downloadAnchorNode.click();
                 downloadAnchorNode.remove();
             },
 
-            importData(input) {
-                const file = input.files[0];
+            importData(event) {
+                const file = event.target.files[0];
                 if (!file) return;
-
+                
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     try {
@@ -807,20 +882,328 @@
                         if (json.profile && json.jobs) {
                             this.data = json;
                             this.saveData();
-                            UI.showToast('数据导入成功', 'success');
-                            setTimeout(() => location.reload(), 1000);
+                            this.render();
+                            UI.showToast('数据恢复成功', 'success');
                         } else {
-                            throw new Error('文件格式不正确');
+                            throw new Error('格式不正确');
                         }
                     } catch (err) {
-                        UI.showToast('导入失败: ' + err.message, 'error');
+                        UI.showToast('导入失败：文件格式错误', 'error');
                     }
                 };
                 reader.readAsText(file);
+                event.target.value = ''; // Reset input
+            },
+
+            clearData() {
+                if (confirm('警告：此操作不可逆！确定要清除所有本地数据吗？')) {
+                    localStorage.removeItem('job_platform_data');
+                    location.reload();
+                }
+            },
+
+            /* --- Modal Helpers --- */
+            openBasicInfoModal() {
+                const b = this.data.profile.basic;
+                const formHtml = `
+                    <div class="space-y-3">
+                        <input type="text" id="m-name" placeholder="姓名" class="w-full border p-2 rounded text-sm" value="${b.name||''}">
+                        <input type="text" id="m-phone" placeholder="电话" class="w-full border p-2 rounded text-sm" value="${b.phone||''}">
+                        <input type="email" id="m-email" placeholder="邮箱" class="w-full border p-2 rounded text-sm" value="${b.email||''}">
+                        <input type="text" id="m-location" placeholder="现居地" class="w-full border p-2 rounded text-sm" value="${b.location||''}">
+                        <input type="text" id="m-objective" placeholder="求职意向" class="w-full border p-2 rounded text-sm" value="${b.objective||''}">
+                        <select id="m-jobType" class="w-full border p-2 rounded text-sm">
+                            <option value="全职" ${b.jobType==='全职'?'selected':''}>全职</option>
+                            <option value="实习" ${b.jobType==='实习'?'selected':''}>实习</option>
+                            <option value="兼职" ${b.jobType==='兼职'?'selected':''}>兼职</option>
+                        </select>
+                    </div>
+                `;
+                UI.showModal('编辑基本信息', formHtml, true, () => {
+                    this.data.profile.basic = {
+                        name: document.getElementById('m-name').value,
+                        phone: document.getElementById('m-phone').value,
+                        email: document.getElementById('m-email').value,
+                        location: document.getElementById('m-location').value,
+                        objective: document.getElementById('m-objective').value,
+                        jobType: document.getElementById('m-jobType').value,
+                    };
+                    this.saveData();
+                    this.renderProfile();
+                    UI.showToast('基本信息已更新', 'success');
+                });
+            },
+
+            openAddItemModal() {
+                const cat = this.data.currentCategory;
+                let formHtml = '';
+
+                // Generate fields based on category
+                if (cat === 'education') {
+                    formHtml = `
+                        <input type="text" id="m-school" placeholder="学校" class="w-full border p-2 rounded text-sm mb-2">
+                        <input type="text" id="m-major" placeholder="专业" class="w-full border p-2 rounded text-sm mb-2">
+                        <select id="m-degree" class="w-full border p-2 rounded text-sm mb-2">
+                            <option value="本科">本科</option><option value="硕士">硕士</option><option value="博士">博士</option>
+                        </select>
+                        <input type="text" id="m-grad" placeholder="毕业时间" class="w-full border p-2 rounded text-sm mb-2">
+                    `;
+                } else if (cat === 'work' || cat === 'internship') {
+                    formHtml = `
+                        <input type="text" id="m-company" placeholder="公司" class="w-full border p-2 rounded text-sm mb-2">
+                        <input type="text" id="m-position" placeholder="职位" class="w-full border p-2 rounded text-sm mb-2">
+                        <textarea id="m-resp" placeholder="职责描述" class="w-full border p-2 rounded text-sm mb-2 h-20"></textarea>
+                    `;
+                } else if (cat === 'project') {
+                    formHtml = `
+                        <input type="text" id="m-pname" placeholder="项目名称" class="w-full border p-2 rounded text-sm mb-2">
+                        <input type="text" id="m-role" placeholder="角色" class="w-full border p-2 rounded text-sm mb-2">
+                        <input type="text" id="m-tech" placeholder="技术栈" class="w-full border p-2 rounded text-sm mb-2">
+                        <textarea id="m-result" placeholder="成果描述" class="w-full border p-2 rounded text-sm mb-2 h-20"></textarea>
+                    `;
+                } else if (cat === 'skill') {
+                    formHtml = `
+                        <input type="text" id="m-sname" placeholder="技能名称" class="w-full border p-2 rounded text-sm mb-2">
+                        <select id="m-stype" class="w-full border p-2 rounded text-sm mb-2">
+                            <option value="专业技能">专业技能</option><option value="语言能力">语言能力</option><option value="证书">证书</option>
+                        </select>
+                    `;
+                } else {
+                    // Custom / Generic
+                    formHtml = `
+                        <input type="text" id="m-title" placeholder="标题" class="w-full border p-2 rounded text-sm mb-2">
+                        <textarea id="m-desc" placeholder="详细描述" class="w-full border p-2 rounded text-sm mb-2 h-32"></textarea>
+                    `;
+                }
+
+                UI.showModal(`添加${document.getElementById('current-category-title').textContent}`, formHtml, true, () => {
+                    let newItem = {};
+                    if (cat === 'education') {
+                        newItem = {
+                            school: document.getElementById('m-school').value,
+                            major: document.getElementById('m-major').value,
+                            degree: document.getElementById('m-degree').value,
+                            graduationTime: document.getElementById('m-grad').value
+                        };
+                    } else if (cat === 'work' || cat === 'internship') {
+                        newItem = {
+                            company: document.getElementById('m-company').value,
+                            position: document.getElementById('m-position').value,
+                            responsibilities: document.getElementById('m-resp').value
+                        };
+                    } else if (cat === 'project') {
+                        newItem = {
+                            projectName: document.getElementById('m-pname').value,
+                            role: document.getElementById('m-role').value,
+                            technologies: document.getElementById('m-tech').value,
+                            result: document.getElementById('m-result').value
+                        };
+                    } else if (cat === 'skill') {
+                        newItem = {
+                            skillName: document.getElementById('m-sname').value,
+                            skillType: document.getElementById('m-stype').value
+                        };
+                    } else {
+                        newItem = {
+                            title: document.getElementById('m-title').value,
+                            description: document.getElementById('m-desc').value
+                        };
+                    }
+
+                    if (this.data.profile.custom[cat]) {
+                        this.data.profile.custom[cat].push(newItem);
+                    } else if (Array.isArray(this.data.profile[cat])) {
+                        this.data.profile[cat].push(newItem);
+                    } else {
+                        this.data.profile.custom[cat] = [newItem];
+                    }
+                    this.saveData();
+                    this.renderCategoryList();
+                    UI.showToast('添加成功', 'success');
+                });
+            },
+
+            openAddJobModal() {
+                const formHtml = `
+                    <input type="text" id="m-jtitle" placeholder="职位名称" class="w-full border p-2 rounded text-sm mb-2">
+                    <input type="text" id="m-cname" placeholder="公司名称" class="w-full border p-2 rounded text-sm mb-2">
+                    <textarea id="m-jd" placeholder="原始JD (可稍后粘贴)" class="w-full border p-2 rounded text-sm mb-2 h-32"></textarea>
+                `;
+                UI.showModal('新增岗位', formHtml, true, () => {
+                    const newJob = {
+                        id: Date.now().toString(),
+                        jobTitle: document.getElementById('m-jtitle').value,
+                        companyName: document.getElementById('m-cname').value,
+                        rawJD: document.getElementById('m-jd').value,
+                        parsed: null
+                    };
+                    this.data.jobs.push(newJob);
+                    this.saveData();
+                    this.renderJobs();
+                    this.selectJob(newJob.id);
+                    UI.showToast('岗位已添加', 'success');
+                });
+            },
+
+            openAddCustomTypeModal() {
+                const formHtml = `<input type="text" id="m-cust-type" placeholder="类型名称 (如: 奖项)" class="w-full border p-2 rounded text-sm">`;
+                UI.showModal('新增自定义类型', formHtml, true, () => {
+                    const val = document.getElementById('m-cust-type').value.trim();
+                    if (val) {
+                        this.data.settings.customTypes.push(val);
+                        this.saveData();
+                        this.renderConsole();
+                        UI.showToast('类型已添加', 'success');
+                    }
+                });
             }
         };
 
-        // Initialize App
+        /**
+         * UI Helper Class
+         */
+        const UI = {
+            toastContainer: document.getElementById('toast-container'),
+            
+            showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                const colors = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    info: 'bg-gray-800'
+                };
+                toast.className = `${colors[type]} text-white text-sm px-4 py-3 rounded shadow-lg transform transition-all duration-300 translate-y-10 opacity-0 flex items-center`;
+                
+                let icon = '';
+                if(type === 'success') icon = '<i class="fa-solid fa-check-circle mr-2"></i>';
+                if(type === 'error') icon = '<i class="fa-solid fa-circle-exclamation mr-2"></i>';
+                
+                toast.innerHTML = `${icon}<span>${message}</span>`;
+                
+                this.toastContainer.appendChild(toast);
+                
+                // Animate in
+                requestAnimationFrame(() => {
+                    toast.classList.remove('translate-y-10', 'opacity-0');
+                });
+
+                // Remove after 3s
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-x-10');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            },
+
+            showModal(title, contentHtml, showConfirm = true, onConfirm = null) {
+                const overlay = document.getElementById('modal-overlay');
+                const mTitle = document.getElementById('modal-title');
+                const mBody = document.getElementById('modal-body');
+                const mConfirm = document.getElementById('modal-confirm');
+
+                mTitle.textContent = title;
+                mBody.innerHTML = contentHtml;
+                
+                if (showConfirm) {
+                    mConfirm.classList.remove('hidden');
+                    // Remove old listeners to prevent stacking
+                    const newBtn = mConfirm.cloneNode(true);
+                    mConfirm.parentNode.replaceChild(newBtn, mConfirm);
+                    
+                    newBtn.addEventListener('click', () => {
+                        if (onConfirm) onConfirm();
+                        this.closeModal();
+                    });
+                } else {
+                    document.getElementById('modal-confirm').classList.add('hidden');
+                }
+
+                overlay.classList.remove('hidden');
+            },
+
+            closeModal() {
+                document.getElementById('modal-overlay').classList.add('hidden');
+            },
+
+            copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    this.showToast('已复制到剪贴板', 'success');
+                });
+            }
+        };
+
+        /**
+         * AI Service (Handles API calls and Simulation)
+         */
+        const AI = {
+            async call(prompt) {
+                const { apiKey, endpoint, model } = App.data.settings;
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [{ role: "user", content: prompt }],
+                            temperature: 0.7
+                        })
+                    });
+                    
+                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+                    const data = await response.json();
+                    return data.choices[0].message.content;
+                } catch (error) {
+                    throw error;
+                }
+            },
+
+            simulateProfileAnalysis(text) {
+                // Simple keyword matching for simulation
+                if (text.includes('大学') || text.includes('学院') || text.includes('专业')) {
+                    return { category: 'education', data: { school: '模拟大学', major: '模拟专业', degree: '本科' } };
+                }
+                if (text.includes('公司') || text.includes('工作') || text.includes('负责')) {
+                    return { category: 'work', data: { company: '模拟科技公司', position: '实习生', responsibilities: text } };
+                }
+                return { category: 'project', data: { projectName: '模拟项目', role: '开发者', result: text } };
+            },
+
+            simulateJDParse(text) {
+                return {
+                    educationRequired: '本科及以上',
+                    experienceRequired: '1-3年',
+                    salaryRange: '15k-25k',
+                    workLocation: '北京',
+                    skillsExtracted: [
+                        { skill: 'JavaScript', weight: 0.9 },
+                        { skill: 'HTML/CSS', weight: 0.8 },
+                        { skill: 'Vue.js', weight: 0.7 }
+                    ],
+                    responsibilities: '1. 负责前端页面开发；\n2. 配合后端完成接口联调；\n3. 优化页面性能。'
+                };
+            },
+
+            simulateResumeGen(profile, job) {
+                return `
+<div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
+    <h1 style="text-align: center;">${profile.name || '求职者'} - 个人简历</h1>
+    <h2 style="text-align: center; color: #666;">应聘职位：${job.jobTitle}</h2>
+    <hr style="margin: 20px 0;">
+    <h3>教育背景</h3>
+    <p>学校：${profile.education[0]?.school || '某大学'} | 专业：${profile.education[0]?.major || '计算机科学'}</p>
+    <h3>工作经历</h3>
+    <p>公司：${profile.work[0]?.company || '某公司'} | 职位：${profile.work[0]?.position || '工程师'}</p>
+    <p>${profile.work[0]?.responsibilities || '负责相关工作。'}</p>
+    <h3>技能特长</h3>
+    <p>熟练掌握 ${job.parsed?.skillsExtracted.map(s=>s.skill).join(', ') || '相关技术'}。</p>
+</div>
+                `;
+            }
+        };
+
+        // Initialize App on Load
         window.addEventListener('DOMContentLoaded', () => {
             App.init();
         });
