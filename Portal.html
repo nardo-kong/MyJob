@@ -277,7 +277,10 @@
 <input class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none" id="cfg-model" type="text" value="gpt-3.5-turbo"/>
 </div>
 </div>
-<button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors" id="btn-save-api">保存配置</button>
+<div class="flex items-center space-x-2">
+    <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm transition-colors" id="btn-save-api">保存配置</button>
+    <button class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm transition-colors" id="btn-test-api">测试连接</button>
+</div>
 </div>
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
 <div class="flex justify-between items-center mb-4 border-b pb-2">
@@ -408,15 +411,15 @@
 
             updateApiStatus() {
                 const indicator = document.getElementById('api-status-indicator');
-                const dot = indicator.querySelector('span');
-                const text = indicator.lastChild;
+                const dot = indicator.querySelector('span:first-child');
+                const text = indicator.querySelector('span:last-child');
                 
                 if (this.data.settings.apiKey && this.data.settings.apiKey.length > 5) {
                     dot.className = "w-2 h-2 rounded-full bg-green-500";
-                    text.textContent = " API 已配置";
+                    text.textContent = "API 已配置";
                 } else {
                     dot.className = "w-2 h-2 rounded-full bg-red-500";
-                    text.textContent = " API 未配置";
+                    text.textContent = "API 未配置";
                 }
             },
 
@@ -456,11 +459,13 @@
 
                 // Console Actions
                 document.getElementById('btn-save-api').addEventListener('click', () => this.saveApiConfig());
+                document.getElementById('btn-test-api').addEventListener('click', () => this.testApiConnection());
                 document.getElementById('btn-add-custom-type').addEventListener('click', () => this.openAddCustomTypeModal());
                 document.getElementById('btn-save-prompts').addEventListener('click', () => this.savePrompts());
 
                 // Data Actions
                 document.getElementById('btn-export').addEventListener('click', () => this.exportData());
+                document.querySelector('button.w-full.bg-white').addEventListener('click', () => document.getElementById('file-import').click());
                 document.getElementById('file-import').addEventListener('change', (e) => this.importData(e));
                 document.getElementById('btn-clear-data').addEventListener('click', () => this.clearData());
 
@@ -851,6 +856,44 @@
                 UI.showToast('模板已保存', 'success');
             },
 
+            async testApiConnection() {
+                const buttonEl = document.getElementById('btn-test-api');
+                const originalText = buttonEl.innerHTML;
+                buttonEl.innerHTML = '正在测试...';
+                buttonEl.disabled = true;
+
+                const tempSettings = {
+                    apiKey: document.getElementById('cfg-api-key').value,
+                    endpoint: document.getElementById('cfg-endpoint').value,
+                    model: document.getElementById('cfg-model').value
+                };
+
+                try {
+                    const response = await fetch('http://localhost:5000/api/ai', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...tempSettings,
+                            isTest: true,
+                            messages: []
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.details || '测试请求失败');
+                    }
+                    
+                    UI.showToast('连接成功！API 配置有效。', 'success');
+
+                } catch (error) {
+                    UI.showToast(`操作失败: ${error.message}`, 'error');
+                } finally {
+                    buttonEl.innerHTML = originalText;
+                    buttonEl.disabled = false;
+                }
+            },
+
             removeCustomType(index) {
                 if (!confirm('确定删除此类型？已有数据可能无法正确显示。')) return;
                 const type = this.data.settings.customTypes[index];
@@ -1156,6 +1199,70 @@
                     return data.choices[0].message.content;
                 } catch (error) {
                     throw error;
+                }
+            },
+
+            async callAI(prompt, userInput, buttonEl, isTest = false, settingsOverride = null) {
+                const settings = settingsOverride || App.data.settings;
+                const { apiKey, endpoint, model } = settings;
+
+                if (!apiKey) {
+                    UI.showToast('错误: API Key 未配置', 'error');
+                    throw new Error('API Key not configured');
+                }
+
+                const originalButtonContent = buttonEl.innerHTML;
+                if (!isTest) {
+                    buttonEl.innerHTML = `<div class="spinner mx-auto"></div>`;
+                }
+                buttonEl.disabled = true;
+
+                const proxyEndpoint = 'http://localhost:5000/api/ai';
+
+                const body = {
+                    apiKey,
+                    endpoint,
+                    model,
+                    messages: [
+                        { role: 'system', content: prompt },
+                        { role: 'user', content: userInput }
+                    ],
+                    isTest
+                };
+
+                try {
+                    const response = await fetch(proxyEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(body)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        const errorDetails = errorData.details || `API 请求失败: ${response.status} ${response.statusText}`;
+                        throw new Error(errorDetails);
+                    }
+
+                    if (isTest) {
+                        UI.showToast('API 连接成功!', 'success');
+                        return true;
+                    }
+
+                    const result = await response.json();
+                    const content = result.choices[0].message.content;
+                    return JSON.parse(content);
+
+                } catch (error) {
+                    console.error('AI call failed:', error);
+                    UI.showToast(`操作失败: ${error.message}`, 'error');
+                    throw error; // Re-throw to be caught by caller
+                } finally {
+                    if (!isTest) { // Don't restore button for test, caller will do it
+                        buttonEl.innerHTML = originalButtonContent;
+                        buttonEl.disabled = false;
+                    }
                 }
             },
 
