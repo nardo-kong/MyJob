@@ -1,7 +1,7 @@
 import webbrowser
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import requests
+from openai import OpenAI
 import httpx
 import threading
 import sys
@@ -53,30 +53,44 @@ def proxy_ai():
         "messages": messages,
         "temperature": 0.5,
     }
-    
-    # 对于非测试请求，需要返回 JSON 对象
-    if not is_test:
-        payload["response_format"] = {"type": "json_object"}
-
-    # LangChain 等客户端会自动将 /chat/completions 拼接到 base_url 后
-    # 如果用户在前端输入的是 base_url，则自动补全
-    if not endpoint.endswith('/chat/completions'):
-        if not endpoint.endswith('/'):
-            endpoint += '/'
-        endpoint += 'chat/completions'
 
     try:
-        # 核心：使用 httpx 来绕过 SSL 证书验证，并解决 requests 经常被 WAF 直接断开连接(10054)的问题
-        print(f"Sending request to endpoint: {endpoint}")
-        with httpx.Client(verify=False) as client:
-            response = client.post(endpoint, headers=headers, json=payload, timeout=60.0)
+        print(f"Sending request via OpenAI SDK to: {endpoint}")
+        client = OpenAI(
+            api_key=api_key,
+            base_url=endpoint,
+            http_client=httpx.Client(verify=False, timeout=60.0)
+        )
         
-        # 打印响应状态码和文本内容以便在后端控制台进行排错
-        print(f"Response status code: {response.status_code}")
-        print(f"Response text: {response.text}")
+        # 使用官方 SDK 请求
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=0.5
+        )
+
+        print(f"SDK response type: {type(response)}")
+        print(f"SDK response value: {response}")
+
+        if isinstance(response, str):
+            content = response
+        else:
+            try:
+                content = response.choices[0].message.content
+            except AttributeError:
+                dumped = response.model_dump() if hasattr(response, "model_dump") else response
+                print(f"SDK response dump: {dumped}")
+                content = dumped["choices"][0]["message"]["content"]
         
-        response.raise_for_status()  # 如果响应状态码不是 2xx，则引发 HTTPError
-        return jsonify(response.json())
+        # 将结果反序列化为类似格式以便前端继续使用
+        return jsonify({
+            "choices": [{
+                "message": {
+                    "content": content
+                }
+            }]
+        })
+        
     except httpx.RequestError as e:
         # 捕获所有 httpx 请求相关的异常
         error_message = f"Failed to connect to API endpoint: {str(e)}"
@@ -96,11 +110,6 @@ def proxy_ai():
         error_message = f"HTTP Error {e.response.status_code}: {e.response.text}"
         print(f"--- HTTP STATUS ERROR ---\n{error_message}\n-------------------")
         return jsonify({"error": "API returned an error", "details": error_message}), 502
-    except ValueError as e:
-        # 捕获 JSON 解析错误
-        error_message = f"Failed to parse API response as JSON: {str(e)}. Response text: {response.text}"
-        print(f"--- PARSE ERROR ---\n{error_message}\n-------------------")
-        return jsonify({"error": "Invalid JSON response", "details": error_message}), 502
     except Exception as e:
         error_message = f"An unexpected error occurred: {str(e)}"
         print(f"--- UNEXPECTED ERROR ---\n{error_message}\n-------------------")

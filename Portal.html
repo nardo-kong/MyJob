@@ -630,20 +630,26 @@
                             result = JSON.parse(result);
                         } catch (e) {
                             // Fallback if AI returns text around JSON
-                            const match = result.match(/\{[\s\S]*\}/);
-                            if (match) result = JSON.parse(match[0]);
-                            else throw new Error("AI返回格式无法解析");
+                        const match = result.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+                        if (match) {
+                            result = JSON.parse(match[0]);
+                        } else {
+                            throw new Error("AI返回格式无法解析");
                         }
-                    } else {
-                        // Simulation
-                        await new Promise(r => setTimeout(r, 1000));
-                        UI.showToast('API未配置，使用模拟分析', 'info');
-                        result = AI.simulateProfileAnalysis(text);
                     }
+                } else {
+                    // Simulation
+                    await new Promise(r => setTimeout(r, 1000));
+                    UI.showToast('API未配置，使用模拟分析', 'info');
+                    result = AI.simulateProfileAnalysis(text);
+                }
 
-                    // Add to data
-                    const cat = result.category || 'project';
-                    const newItem = result.data || { description: text, title: 'AI生成条目' };
+                // Convert to array if it's a single object
+                const items = Array.isArray(result) ? result : [result];
+
+                for (const item of items) {
+                    const cat = item.category || 'project';
+                    const newItem = item.data || { description: text, title: 'AI生成条目' };
                     
                     if (this.data.profile.custom[cat]) {
                         this.data.profile.custom[cat].push(newItem);
@@ -653,14 +659,18 @@
                         // Create custom array if not exists
                         this.data.profile.custom[cat] = [newItem];
                     }
+                }
 
-                    this.saveData();
-                    this.renderProfile();
-                    this.switchCategory(cat);
-                    document.getElementById('ai-input-text').value = '';
-                    UI.showToast('已自动归类并添加', 'success');
+                this.saveData();
+                this.renderProfile();
+                // Switch to the category of the last extracted item
+                if (items.length > 0) {
+                    this.switchCategory(items[items.length - 1].category || 'project');
+                }
+                document.getElementById('ai-input-text').value = '';
+                UI.showToast(`已自动归类并添加 ${items.length} 个条目`, 'success');
 
-                } catch (error) {
+            } catch (error) {
                     console.error(error);
                     UI.showToast('分析失败: ' + error.message, 'error');
                 } finally {
