@@ -71,22 +71,25 @@ def proxy_ai():
         response = client.chat.completions.create(**completion_args)
 
         if stream:
+            print("Stream mode: starting SSE response")
             def generate():
                 import json
+                chunk_count = 0
                 try:
                     for chunk in response:
                         delta = chunk.choices[0].delta if chunk.choices and len(chunk.choices) > 0 else None
-                        if not delta: continue
+                        if not delta:
+                            continue
+                        chunk_count += 1
                         content = delta.content or ""
-                        # 获取思考模型特有的 reasoning_content
-                        # 兼容不同厂商的字段命名（如阿里云、DeepSeek的区别）
                         reasoning = ""
                         if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
                             reasoning = delta.reasoning_content
-                        
                         yield f"data: {json.dumps({'content': content, 'reasoning': reasoning})}\n\n"
+                    print(f"Stream mode: completed SSE response ({chunk_count} chunks)")
                     yield "data: [DONE]\n\n"
                 except Exception as e:
+                    print(f"Stream generation error: {e}")
                     yield f"data: {json.dumps({'error': str(e)})}\n\n"
             from flask import Response
             return Response(generate(), mimetype='text/event-stream')

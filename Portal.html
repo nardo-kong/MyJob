@@ -85,7 +85,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 h-screen flex overflow-hidden">
+<body class="bg-gray-50 text-gray-800 h-screen flex overflow-auto">
 <nav class="w-64 bg-slate-900 text-white flex flex-col flex-shrink-0 shadow-xl z-20">
 <div class="p-6 border-b border-slate-700">
 <h1 class="text-xl font-bold tracking-wide">求职聚合平台</h1>
@@ -129,7 +129,7 @@
             </div>
 </div>
 </nav>
-<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<main class="flex-1 flex flex-col h-full overflow-auto relative">
 <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-8 flex-shrink-0">
 <h2 class="text-lg font-bold text-gray-800" id="page-title">个人信息管理</h2>
 <div class="flex items-center space-x-4">
@@ -264,13 +264,15 @@
 </div>
 <div class="border border-gray-200 rounded bg-white mt-2">
 <div class="p-2 bg-gray-50 border-b flex justify-between items-center">
-<span class="text-xs text-gray-600 font-bold">HTML 预览</span>
+<span class="text-xs text-gray-600 font-bold">生成操作</span>
 <div class="space-x-2">
-<button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-100" id="btn-copy-resume">复制代码</button>
+<button class="px-3 py-1 bg-white border border-gray-300 rounded text-xs hover:bg-gray-100" id="btn-open-resume">新窗口打开</button>
 <button class="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 shadow-sm" id="btn-download-resume">下载 HTML</button>
 </div>
 </div>
-<div class="p-4 bg-white" id="resume-preview-content" style="max-height: 800px; overflow-y: auto;">
+<div class="p-4 bg-white text-sm text-gray-600" id="resume-output-info">
+生成完成后，可点击“新窗口打开”或“下载 HTML”。
+</div>
 </div>
 </div>
 </div>
@@ -423,6 +425,14 @@
                     model: 'gpt-3.5-turbo',
                     customTypes: [],
                     schema: {
+                        basic: [
+                            { name: 'name', label: '姓名', type: 'text' },
+                            { name: 'phone', label: '电话', type: 'text' },
+                            { name: 'email', label: '邮箱', type: 'text' },
+                            { name: 'location', label: '现居地', type: 'text' },
+                            { name: 'objective', label: '求职意向', type: 'text' },
+                            { name: 'jobType', label: '工作类型', type: 'text' }
+                        ],
                         education: [
                             { name: 'school', label: '学校', type: 'text' },
                             { name: 'major', label: '专业', type: 'text' },
@@ -453,7 +463,7 @@
                     prompts: {
                         profile: '分析以下文本，将提取的信息与现有的经历匹配。返回JSON格式的数组，每个对象包含：{\n  "action": "add"|"update",\n  "category": "对应分类",\n  "index": 仅当update时提供更新的索引,\n  "data": {提取的数据, 必须严格使用Schema中的英文字段名},\n  "reason": "处理理由"\n}',
                         jd: '分析以下职位描述，提取关键信息。返回JSON格式：{educationRequired, experienceRequired, salaryRange, workLocation, skillsExtracted: [{skill, weight}], responsibilities}。',
-                        resume: '根据我的个人信息和职位要求，生成一份HTML格式的简历内容。'
+                        resume: '你是一位资深的职场简历专家和前端开发工程师。请根据我提供的个人信息和岗位要求（JD），为我量身定制一份专业的单页求职简历 HTML 源码。\n\n【核心要求】\n1. 内容要求：筛选并修改我的经历和项目描述，向JD中的“岗位职责”和“技能要求”靠拢。重点突出与岗位强相关的经验，弱化或省略无关内容。润色语言，使用数据和强动作动词（如“提升了”、“负责”等），使简历显得极其专业。\n2. HTML 格式：请只返回一段完整、合规、可直接用浏览器打开的纯 HTML 代码。不要包含 ` ```html ` 等 markdown 外框语言包裹。\n3. CSS 样式：\n   - 请使用内联或内部 <style> 块。不要引用任何外部库文件（如 Tailwind/Bootstrap），所有排版必须原生实现。\n   - 界面要干净、现代、黑白灰为主配合淡雅的强调色（商务蓝或深灰）。\n   - 结构清晰，包含：题头（姓名/联系方式）、教育背景、核心技能、工作经历、项目经验（可选）。\n   - 要有明显的分隔线、留白，保证打印出来是一张标准 A4 大小的高级简历。\n\n开始生成。'
                     }
                 },
                 currentJobId: null,
@@ -473,8 +483,20 @@
                 if (stored) {
                     try {
                         const parsed = JSON.parse(stored);
-                        // Merge to ensure structure integrity
-                        this.data = { ...this.data, ...parsed, settings: { ...this.data.settings, ...parsed.settings } };
+                        // Auto-upgrade weak prompts
+                        if (parsed.settings && parsed.settings.prompts && parsed.settings.prompts.resume === '根据我的个人信息和职位要求，生成一份HTML格式的简历内容。') {
+                            parsed.settings.prompts.resume = this.data.settings.prompts.resume;
+                        }
+                        // Merge schema separately to preserve default basic schema fields
+                        const mergedSettings = {
+                            ...this.data.settings,
+                            ...parsed.settings,
+                            schema: {
+                                ...this.data.settings.schema,
+                                ...(parsed.settings && parsed.settings.schema ? parsed.settings.schema : {})
+                            }
+                        };
+                        this.data = { ...this.data, ...parsed, settings: mergedSettings };
                     } catch (e) {
                         console.error("Data load error", e);
                     }
@@ -1081,15 +1103,14 @@
                 progressArea.classList.remove('hidden');
                 const progressTitle = progressArea.querySelector('div:first-child');
                 const reasoningBox = document.getElementById('resume-ai-reasoning');
-                const previewContent = document.getElementById('resume-preview-content');
+                const outputInfo = document.getElementById('resume-output-info');
                 
                 progressTitle.innerHTML = `<div class="spinner mr-2 border-indigo-300 border-t-indigo-600 rounded-full w-3 h-3 animate-spin"></div> 网络连接建立中...`;
                 reasoningBox.textContent = '';
-                previewContent.innerHTML = '';
+                outputInfo.textContent = '生成中，请耐心等待 AI 思考与排版。';
                 
                 // Clear any stored raw html
                 this.lastGeneratedResumeHtml = '';
-
                 try {
                     const context = `
                         个人信息: ${JSON.stringify(this.data.profile.basic)}
@@ -1125,16 +1146,16 @@
                     }
 
                     this.lastGeneratedResumeHtml = htmlContent;
-                    
-                    // Render HTML in shadow DOM or iframe to avoid CSS bleed, here we use direct HTML but scoped minimally or just direct if it uses inline styles
-                    previewContent.innerHTML = htmlContent;
+                    outputInfo.textContent = '生成完成，可点击“新窗口打开”或“下载 HTML”。';
 
-                    // Bind download/copy buttons
-                    const copyBtn = document.getElementById('btn-copy-resume');
-                    const newCopyBtn = copyBtn.cloneNode(true);
-                    copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
-                    newCopyBtn.addEventListener('click', () => {
-                        UI.copyToClipboard(this.lastGeneratedResumeHtml);
+                    const openBtn = document.getElementById('btn-open-resume');
+                    const newOpenBtn = openBtn.cloneNode(true);
+                    openBtn.parentNode.replaceChild(newOpenBtn, openBtn);
+                    newOpenBtn.addEventListener('click', () => {
+                        const blob = new Blob([this.lastGeneratedResumeHtml], { type: 'text/html;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
                     });
 
                     const downBtn = document.getElementById('btn-download-resume');
