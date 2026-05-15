@@ -38,36 +38,58 @@ def proxy_ai():
     endpoint = data.get('endpoint')
     model = data.get('model')
     messages = data.get('messages')
+    temperature = data.get('temperature') # 允许从前端获取
+    skip_ssl = data.get('skipSsl', False) # 允许前端指定是否跳过 SSL 校验
+    stream = data.get('stream', False) # 是否启用流式输出
     is_test = data.get('isTest', False)
 
     if not api_key or not endpoint or not model:
         return jsonify({"error": "Missing API configuration"}), 400
 
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {api_key}'
-    }
-    
-    payload = {
-        "model": model,
-        "messages": messages,
-        "temperature": 0.5,
-    }
-
     try:
-        print(f"Sending request via OpenAI SDK to: {endpoint}")
+        print(f"Sending request via OpenAI SDK to: {endpoint} (SkipSSL: {skip_ssl}, Stream: {stream})")
+
+        # 根据前端参数决定是否启用 SSL 校验，延长超时时间以支持思考模型
         client = OpenAI(
             api_key=api_key,
             base_url=endpoint,
-            http_client=httpx.Client(verify=False, timeout=60.0)
+            http_client=httpx.Client(timeout=300.0, verify=not skip_ssl)
         )
         
+        # 构造请求参数，如果前端没传 temperature 则不发送该参数
+        # 解决某些推理模型（如 QVQ, o1）对 temperature 的严格限制
+        completion_args = {
+            "model": model,
+            "messages": messages,
+        }
+        if temperature is not None:
+            completion_args["temperature"] = float(temperature)
+        if stream:
+            completion_args["stream"] = True
+
         # 使用官方 SDK 请求
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=0.5
-        )
+        response = client.chat.completions.create(**completion_args)
+
+        if stream:
+            def generate():
+                import json
+                try:
+                    for chunk in response:
+                        delta = chunk.choices[0].delta if chunk.choices and len(chunk.choices) > 0 else None
+                        if not delta: continue
+                        content = delta.content or ""
+                        # 获取思考模型特有的 reasoning_content
+                        # 兼容不同厂商的字段命名（如阿里云、DeepSeek的区别）
+                        reasoning = ""
+                        if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
+                            reasoning = delta.reasoning_content
+                        
+                        yield f"data: {json.dumps({'content': content, 'reasoning': reasoning})}\n\n"
+                    yield "data: [DONE]\n\n"
+                except Exception as e:
+                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            from flask import Response
+            return Response(generate(), mimetype='text/event-stream')
 
         print(f"SDK response type: {type(response)}")
         print(f"SDK response value: {response}")
