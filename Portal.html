@@ -338,6 +338,16 @@
 <h3 class="text-md font-bold text-gray-800 mb-4 border-b pb-2">Prompt 模板管理</h3>
 <div class="space-y-4">
 <div>
+<label class="block text-sm font-medium text-gray-700 mb-1">简历模板 (HTML 骨架与样式)</label>
+<div class="flex flex-wrap gap-2 mb-2">
+<select id="resume-template-select" class="border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 outline-none flex-1"></select>
+<button id="btn-add-resume-template" class="px-3 py-2 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50">新增模板</button>
+<button id="btn-delete-resume-template" class="px-3 py-2 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50">删除模板</button>
+</div>
+<p class="text-xs text-gray-500 mb-2">选择模板后，可以在下方编辑其专属的 HTML 骨架代码。</p>
+<textarea class="w-full h-48 border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 outline-none font-mono" id="template-html"></textarea>
+</div>
+<div>
 <label class="block text-sm font-medium text-gray-700 mb-1">个人信息分析 Prompt</label>
 <textarea class="w-full h-24 border border-gray-300 rounded-md p-2 text-sm focus:ring-blue-500 outline-none font-mono" id="prompt-profile"></textarea>
 </div>
@@ -424,6 +434,13 @@
                     endpoint: 'https://api.openai.com/v1/chat/completions',
                     model: 'gpt-3.5-turbo',
                     customTypes: [],
+                    selectedResumeTemplateIndex: 0,
+                    resumeTemplates: [
+                        {
+                            name: '默认单页简历',
+                            html: '<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }\nh1 { border-bottom: 2px solid #333; }\n.section { margin-bottom: 20px; }\n.section-title { font-weight: bold; font-size: 1.2em; border-bottom: 1px solid #ccc; margin-bottom: 10px; }\n</style>\n</head>\n<body>\n  <!-- 请AI根据个人信息和技能在这里填充HTML结构 -->\n</body>\n</html>'
+                        }
+                    ],
                     schema: {
                         basic: [
                             { name: 'name', label: '姓名', type: 'text' },
@@ -501,6 +518,22 @@
                         console.error("Data load error", e);
                     }
                 }
+
+                if (!this.data.settings.resumeTemplates || this.data.settings.resumeTemplates.length === 0) {
+                    this.data.settings.resumeTemplates = [{
+                        name: '默认单页简历',
+                        html: '<!DOCTYPE html>\n<html>\n<head>\n<style>\nbody { font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }\nh1 { border-bottom: 2px solid #333; }\n.section { margin-bottom: 20px; }\n.section-title { font-weight: bold; font-size: 1.2em; border-bottom: 1px solid #ccc; margin-bottom: 10px; }\n</style>\n</head>\n<body>\n  <!-- 请AI根据个人信息和技能在这里填充HTML结构 -->\n</body>\n</html>'
+                    }];
+                }
+                if (this.data.settings.selectedResumeTemplateIndex === undefined || this.data.settings.selectedResumeTemplateIndex >= this.data.settings.resumeTemplates.length) {
+                    this.data.settings.selectedResumeTemplateIndex = 0;
+                }
+                // Ensure existing templates don't crash the editor
+                this.data.settings.resumeTemplates.forEach(t => {
+                    if (t.html === undefined) {
+                        t.html = t.prompt || '';
+                    }
+                });
                 
                 if (!this.data.settings.apiProfiles || this.data.settings.apiProfiles.length === 0) {
                     this.data.settings.apiProfiles = [{
@@ -1123,8 +1156,16 @@
                     `;
 
                     let htmlContent = '';
+                    const basePrompt = this.data.settings.prompts.resume;
+                    const activeTpl = this.data.settings.resumeTemplates[this.data.settings.selectedResumeTemplateIndex];
+                    const tplHtml = activeTpl ? (activeTpl.html || '') : '';
+                    let finalPrompt = basePrompt;
+                    if (tplHtml.trim()) {
+                        finalPrompt += "\n\n【HTML 样式模板参考（请严格遵循此样式和骨架结构填入信息）】\n" + tplHtml;
+                    }
+
                     if (this.data.settings.apiKey) {
-                        htmlContent = await AI.call(this.data.settings.prompts.resume + "\n\n" + context, (content, reasoning) => {
+                        htmlContent = await AI.call(finalPrompt + "\n\n" + context, (content, reasoning) => {
                             if (reasoning && reasoning.length > 0) {
                                 progressTitle.innerHTML = `<div class="spinner mr-2 border-indigo-300 border-t-indigo-600 rounded-full w-3 h-3 animate-spin"></div> AI 正在深度思考排版与内容契合度...`;
                                 reasoningBox.textContent = reasoning;
@@ -1196,7 +1237,15 @@
                 
                 document.getElementById('prompt-profile').value = this.data.settings.prompts.profile;
                 document.getElementById('prompt-jd').value = this.data.settings.prompts.jd;
+                this.renderResumeTemplateSelect();
                 document.getElementById('prompt-resume').value = this.data.settings.prompts.resume;
+                const activeTpl = this.data.settings.resumeTemplates[this.data.settings.selectedResumeTemplateIndex];
+                document.getElementById('template-html').value = activeTpl ? (activeTpl.html || '') : '';
+
+                const resumeSelect = document.getElementById('resume-template-select');
+                resumeSelect.onchange = (e) => this.onResumeTemplateChange(parseInt(e.target.value, 10));
+                document.getElementById('btn-add-resume-template').onclick = () => this.addResumeTemplate();
+                document.getElementById('btn-delete-resume-template').onclick = () => this.deleteResumeTemplate();
 
                 const typesContainer = document.getElementById('custom-types-list');
                 typesContainer.innerHTML = this.data.settings.customTypes.map((type, idx) => {
@@ -1233,7 +1282,43 @@
                 
                 this.renderSchemaEditor(selectedCat);
             },
-            
+
+            renderResumeTemplateSelect() {
+                const select = document.getElementById('resume-template-select');
+                if (!select) return;
+                select.innerHTML = this.data.settings.resumeTemplates.map((template, idx) =>
+                    `<option value="${idx}" ${idx === this.data.settings.selectedResumeTemplateIndex ? 'selected' : ''}>${template.name}</option>`
+                ).join('');
+            },
+
+            onResumeTemplateChange(index) {
+                this.data.settings.selectedResumeTemplateIndex = index;
+                const activeTpl = this.data.settings.resumeTemplates[index];
+                document.getElementById('template-html').value = activeTpl ? (activeTpl.html || '') : '';
+                this.saveData();
+            },
+
+            addResumeTemplate() {
+                const name = prompt('请输入新简历模板名称', '新模板');
+                if (!name) return;
+                this.data.settings.resumeTemplates.push({ name, html: '<!DOCTYPE html>\n<html>\n<head>\n<style>\n/* 在此编写您的自定义 CSS */\n</style>\n</head>\n<body>\n  <!-- 在此编写您的 HTML 骨架 -->\n</body>\n</html>' });
+                this.data.settings.selectedResumeTemplateIndex = this.data.settings.resumeTemplates.length - 1;
+                this.saveData();
+                this.renderConsole();
+            },
+
+            deleteResumeTemplate() {
+                if (this.data.settings.resumeTemplates.length <= 1) {
+                    UI.showToast('至少保留一个简历模板', 'error');
+                    return;
+                }
+                const idx = this.data.settings.selectedResumeTemplateIndex;
+                this.data.settings.resumeTemplates.splice(idx, 1);
+                this.data.settings.selectedResumeTemplateIndex = Math.max(0, idx - 1);
+                this.saveData();
+                this.renderConsole();
+            },
+
             renderSchemaEditor(cat) {
                 const container = document.getElementById('schema-fields-list');
                 const fields = this.data.settings.schema[cat] || [
@@ -1327,8 +1412,12 @@
                 this.data.settings.prompts.profile = document.getElementById('prompt-profile').value;
                 this.data.settings.prompts.jd = document.getElementById('prompt-jd').value;
                 this.data.settings.prompts.resume = document.getElementById('prompt-resume').value;
+                const idx = this.data.settings.selectedResumeTemplateIndex;
+                if (this.data.settings.resumeTemplates && this.data.settings.resumeTemplates[idx]) {
+                    this.data.settings.resumeTemplates[idx].html = document.getElementById('template-html').value;
+                }
                 this.saveData();
-                UI.showToast('模板已保存', 'success');
+                UI.showToast('模板设置已保存', 'success');
             },
 
             async testApiConnection() {

@@ -66,6 +66,7 @@ def proxy_ai():
             completion_args["temperature"] = float(temperature)
         if stream:
             completion_args["stream"] = True
+            completion_args["stream_options"] = {"include_usage": True}
 
         # 使用官方 SDK 请求
         response = client.chat.completions.create(**completion_args)
@@ -76,7 +77,11 @@ def proxy_ai():
                 import json
                 chunk_count = 0
                 try:
+                    usage_info = None
                     for chunk in response:
+                        if hasattr(chunk, 'usage') and chunk.usage is not None:
+                            usage_info = chunk.usage
+                            
                         delta = chunk.choices[0].delta if chunk.choices and len(chunk.choices) > 0 else None
                         if not delta:
                             continue
@@ -86,7 +91,20 @@ def proxy_ai():
                         if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
                             reasoning = delta.reasoning_content
                         yield f"data: {json.dumps({'content': content, 'reasoning': reasoning})}\n\n"
-                    print(f"Stream mode: completed SSE response ({chunk_count} chunks)")
+                    
+                    if usage_info:
+                        prompt_tokens = usage_info.prompt_tokens
+                        completion_tokens = usage_info.completion_tokens
+                        total_tokens = usage_info.total_tokens
+                        
+                        cached_tokens = 0
+                        if hasattr(usage_info, 'prompt_tokens_details') and usage_info.prompt_tokens_details:
+                            cached_tokens = getattr(usage_info.prompt_tokens_details, 'cached_tokens', 0)
+                            
+                        print(f"Stream mode: completed SSE response ({chunk_count} chunks) - Token消耗: 输入 {prompt_tokens} (含缓存 {cached_tokens}), 输出 {completion_tokens}, 总计 {total_tokens}")
+                    else:
+                        print(f"Stream mode: completed SSE response ({chunk_count} chunks)")
+                        
                     yield "data: [DONE]\n\n"
                 except Exception as e:
                     print(f"Stream generation error: {e}")
